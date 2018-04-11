@@ -1,4 +1,4 @@
-grammar mstar;
+grammar Mstar;
 
 compilationUnit
     :   globalDeclaration* EOF

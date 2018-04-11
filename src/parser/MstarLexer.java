@@ -1,4 +1,4 @@
-// Generated from C:/Users/99486/Desktop/Compiler Projects/mstar/src/parser\mstar.g4 by ANTLR 4.7
+// Generated from C:/Users/99486/Desktop/Compiler Projects/mstar/src\Mstar.g4 by ANTLR 4.7
 package parser;
 import org.antlr.v4.runtime.Lexer;
 import org.antlr.v4.runtime.CharStream;
@@ -10,7 +10,7 @@ import org.antlr.v4.runtime.dfa.DFA;
 import org.antlr.v4.runtime.misc.*;
 
 @SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast"})
-public class mstarLexer extends Lexer {
+public class MstarLexer extends Lexer {
 	static { RuntimeMetaData.checkVersion("4.7", RuntimeMetaData.VERSION); }
 
 	protected static final DFA[] _decisionToDFA;
@@ -100,13 +100,13 @@ public class mstarLexer extends Lexer {
 	}
 
 
-	public mstarLexer(CharStream input) {
+	public MstarLexer(CharStream input) {
 		super(input);
 		_interp = new LexerATNSimulator(this,_ATN,_decisionToDFA,_sharedContextCache);
 	}
 
 	@Override
-	public String getGrammarFileName() { return "mstar.g4"; }
+	public String getGrammarFileName() { return "Mstar.g4"; }
 
 	@Override
 	public String[] getRuleNames() { return ruleNames; }
