@@ -1,0 +1,47 @@
+The Hierarchy of the data package
+
+package ast
+    AstNode
+        Program
+        FuncDeclaration
+        ClassDeclaration
+        VariableDeclaration
+        TypeNode
+            ArrayTypeNode
+            PrimitiveTypeNode
+            ClassTypeNode
+        CreatorNode
+        Statement
+            ForStatement
+            WhileStatement
+            IfStatement
+            BreakStatement
+            ReturnStatement
+            BlockStatement
+            VarDeclStatement
+            ExprStatement
+            EmptyStatement
+        Expression
+            IntLiteral
+            BoolLiteral
+            StringLiteral
+            NullLiteral
+            Identifier
+            FuncCallExpression
+            NewExpression
+            UnaryExpression
+            MemberExpression
+            BinaryExpression
+            TernaryExpression
+            AssignExpression
+
+
+package symbol
+    Type
+        VariableType
+            PrimitiveType
+            ClassType
+            ArrayType
+        FunctionType
+    Symbol
+    SymbolTable
