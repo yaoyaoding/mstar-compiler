@@ -1,4 +1,5 @@
 package mstar.ast;
 
-public class VarDeclStatement {
+public class VarDeclStatement extends Statement {
+    public VariableDeclaration declaration;
 }

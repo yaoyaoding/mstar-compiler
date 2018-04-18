@@ -10,7 +10,6 @@ package ast
             ArrayTypeNode
             PrimitiveTypeNode
             ClassTypeNode
-        CreatorNode
         Statement
             ForStatement
             WhileStatement
@@ -27,6 +26,7 @@ package ast
             StringLiteral
             NullLiteral
             Identifier
+            ArrayExpression
             FuncCallExpression
             NewExpression
             UnaryExpression

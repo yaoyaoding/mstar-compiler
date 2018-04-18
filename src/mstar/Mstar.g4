@@ -32,8 +32,10 @@ fieldDeclaration
     :   type variableDeclarators ';'
     ;
 type
-    :   atomType ('[' ']')*
+    :   atomType ('[' empty ']')*
     ;
+empty
+    :;
 primitiveType
     :   token=STRING
     |   token=INT
@@ -62,7 +64,7 @@ statementList
 statement
     :   IF '(' expression ')' statement ( ELSE statement ) ?    #   ifStatement
     |   WHILE '(' expression ')' statement          #   whileStatement
-    |   FOR '(' forControl ')' statement            #   forStatement
+    |   FOR '(' expression? ';' expression? ';' expression? ')' statement            #   forStatement
     |   BREAK ';'                       #   breakStatement
     |   CONTINUE ';'                    #   continueStatement
     |   RETURN expression ? ';'         #   returnStatement
@@ -70,17 +72,6 @@ statement
     |   expression ';'                  #   exprStatement
     |   '{' statementList '}'           #   blockStatement
     |   ';'             #   emptyStatement
-    ;
-
-forControl
-    :   forInit? ';' expression? ';' forUpdate=expressionList
-    ;
-forInit
-    :   variableDeclaration
-    |   expressionList
-    ;
-expressionList
-    :   expression (',' expression)*
     ;
 variableDeclaration
     : type variableDeclarators
@@ -117,23 +108,20 @@ expression
     |   expression bop='&&' expression                  #   binaryExpression
     |   expression bop='||' expression                  #   binaryExpression
     |   expression bop='?' expression ':' expression    #   ternaryExpression
-    |   <assoc=right> expression bop=('='|'+='|'-='|'*='|'/='|'&='|'|='|'^='|'>>='|'<<='|'%=') expression   #assignExpression
+    |   <assoc=right> expression bop='=' expression     #   assignExpression
     ;
 creator
-    :   atomType ('[' expression ']')+ ('[' ']')*
+    :   atomType ('[' expression ']')* ('[' empty ']')*
     ;
 functionCall
-    :   IDENTIFIER '(' argumentList? ')'
-    ;
-argumentList
-    :   expression (',' expression)*
+    :   IDENTIFIER '(' (expression (',' expression)*) ? ')'
     ;
 
 //  lexer
 
 //  reserved words
-BOOL_LITERAL:   'true';
-NULL_LITERAL:   'false';
+BOOL_LITERAL:   'true' | 'false';
+NULL_LITERAL:   'null';
 STRING: 'string';
 INT:    'int';
 BOOL:   'bool';
@@ -148,6 +136,7 @@ RETURN: 'return';
 THIS:   'this';
 NEW:    'new';
 ELSE:   'else';
+
 
 INT_LITERAL:    [0-9][0-9]*;
 STRING_LITERAL: '"' ('\\"' | .)*?  '"';

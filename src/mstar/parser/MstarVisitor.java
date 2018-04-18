@@ -71,6 +71,12 @@ public interface MstarVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitType(MstarParser.TypeContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link MstarParser#empty}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitEmpty(MstarParser.EmptyContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link MstarParser#primitiveType}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -183,24 +189,6 @@ public interface MstarVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitEmptyStatement(MstarParser.EmptyStatementContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link MstarParser#forControl}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitForControl(MstarParser.ForControlContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link MstarParser#forInit}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitForInit(MstarParser.ForInitContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link MstarParser#expressionList}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitExpressionList(MstarParser.ExpressionListContext ctx);
-	/**
 	 * Visit a parse tree produced by {@link MstarParser#variableDeclaration}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -293,10 +281,4 @@ public interface MstarVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitFunctionCall(MstarParser.FunctionCallContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link MstarParser#argumentList}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitArgumentList(MstarParser.ArgumentListContext ctx);
 }

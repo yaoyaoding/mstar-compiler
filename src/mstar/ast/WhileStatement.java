@@ -1,4 +1,6 @@
 package mstar.ast;
 
-public class WhileStatement {
+public class WhileStatement extends Statement{
+    public Expression condition = null;
+    public Statement body = null;
 }

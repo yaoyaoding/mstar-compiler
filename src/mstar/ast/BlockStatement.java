@@ -1,4 +1,7 @@
 package mstar.ast;
 
-public class BlockStatement {
+import java.util.List;
+
+public class BlockStatement extends Statement {
+    public List<Statement> statements;
 }
