@@ -1,4 +1,4 @@
 package mstar.symbol;
 
-public class FunctionType {
+public class FunctionType extends Type {
 }

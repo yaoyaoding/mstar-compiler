@@ -3,12 +3,15 @@ package mstar.compile;
 import mstar.ast.*;
 
 public class SymbolTableBuilder implements IAstVisitor {
-    public void visit(Program node) {
-    }
+    public void visit(Program node) { }
 
     public void visit(FuncDeclaration node) { }
     public void visit(ClassDeclaration node) { }
     public void visit(VariableDeclaration node) { }
+
+    public void visit(ArrayTypeNode node) { }
+    public void visit(PrimitiveTypeNode node) { }
+    public void visit(ClassTypeNode node) { }
 
     public void visit(Statement node) { }
     public void visit(ForStatement node) { }

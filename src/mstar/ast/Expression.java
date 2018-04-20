@@ -2,10 +2,6 @@ package mstar.ast;
 
 import mstar.symbol.VariableType;
 
-public class Expression {
-    VariableType type;
-
-    public void accept(IAstVisitor visitor) {
-        visitor.visit(this);
-    }
+public abstract class Expression extends AstNode {
+    public VariableType type;
 }

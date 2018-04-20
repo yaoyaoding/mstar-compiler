@@ -1,4 +1,4 @@
 package mstar.ast;
 
-public class Statement {
+public abstract class Statement extends AstNode {
 }

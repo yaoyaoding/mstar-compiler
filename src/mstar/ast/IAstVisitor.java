@@ -7,6 +7,10 @@ public interface IAstVisitor {
     void visit(ClassDeclaration node);
     void visit(VariableDeclaration node);
 
+    void visit(ArrayTypeNode node);
+    void visit(PrimitiveTypeNode node);
+    void visit(ClassTypeNode node);
+
     void visit(Statement node);
     void visit(ForStatement node);
     void visit(WhileStatement node);

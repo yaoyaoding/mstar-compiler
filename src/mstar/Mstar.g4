@@ -12,21 +12,10 @@ functionDeclaration
     :  type IDENTIFIER '(' parameterList? ')' functionBody
     ;
 classDeclaration
-    :   CLASS IDENTIFIER classBody
-    ;
-classBody
-    :   '{' classBodyDeclaration* '}'
-    ;
-classBodyDeclaration
-    :   methodDeclaration
-    |   constructorDeclaration
-    |   fieldDeclaration
+    :   CLASS IDENTIFIER '{' (functionDeclaration | constructorDeclaration | fieldDeclaration)* '}'
     ;
 constructorDeclaration
     :   IDENTIFIER '(' parameterList? ')' functionBody
-    ;
-methodDeclaration
-    :   type IDENTIFIER '(' parameterList? ')' functionBody
     ;
 fieldDeclaration
     :   type variableDeclarators ';'

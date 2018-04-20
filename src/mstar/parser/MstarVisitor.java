@@ -35,29 +35,11 @@ public interface MstarVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitClassDeclaration(MstarParser.ClassDeclarationContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link MstarParser#classBody}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitClassBody(MstarParser.ClassBodyContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link MstarParser#classBodyDeclaration}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitClassBodyDeclaration(MstarParser.ClassBodyDeclarationContext ctx);
-	/**
 	 * Visit a parse tree produced by {@link MstarParser#constructorDeclaration}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitConstructorDeclaration(MstarParser.ConstructorDeclarationContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link MstarParser#methodDeclaration}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitMethodDeclaration(MstarParser.MethodDeclarationContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link MstarParser#fieldDeclaration}.
 	 * @param ctx the parse tree

@@ -1,4 +1,4 @@
 package mstar.ast;
 
-public class TypeNode {
+public abstract class TypeNode extends AstNode {
 }

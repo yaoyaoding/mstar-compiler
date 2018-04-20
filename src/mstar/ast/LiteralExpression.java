@@ -2,9 +2,31 @@ package mstar.ast;
 
 import org.antlr.v4.runtime.Token;
 
-public class StringLiteral extends Expression {
-    public String unescape_string;
-    public String string;
+import static mstar.parser.MstarParser.*;
+
+public class LiteralExpression extends Expression {
+    public String typeName;
+    public String value;
+
+    public LiteralExpression(Token token) {
+        switch(token.getType()) {
+            case INT_LITERAL:
+                typeName = "int";
+                value = token.getText();
+                break;
+            case NULL_LITERAL:
+                typeName = "null";
+                value = token.getText();
+                break;
+            case BOOL_LITERAL:
+                typeName = "bool";
+                value = token.getText();
+                break;
+            default:    //case STRING_LITERAL:
+                typeName = "string";
+                value = escape(token.getText());
+        }
+    }
 
     private String escape(String string) {
         StringBuilder stringBuilder = new StringBuilder();
@@ -36,16 +58,11 @@ public class StringLiteral extends Expression {
         }
         return stringBuilder.toString();
     }
-    public StringLiteral(Token token) {
-        this.unescape_string = token.getText();
-        this.string = escape(unescape_string);
-        this.location = new TokenLocation(token);
-    }
-
     @Override public void accept(IAstVisitor visitor) { visitor.visit(this); }
 
     @Override
     public String toFString(String indent) {
-        return unescape_string;
+        return null;
     }
 }
+
