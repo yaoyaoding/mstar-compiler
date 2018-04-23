@@ -35,7 +35,7 @@ public class MstarCompiler {
         ParseTree parseTree = parser.compilationUnit();
 
         if(errorRecorder.errorOccured()) {
-            errorRecorder.printTo(System.out);
+            errorRecorder.printTo(System.err);
             exit(1);
         }
 
@@ -43,7 +43,7 @@ public class MstarCompiler {
         astBuilder.visit(parseTree);
 
         if(errorRecorder.errorOccured()) {
-            errorRecorder.printTo(System.out);
+            errorRecorder.printTo(System.err);
             exit(1);
         }
 
@@ -53,7 +53,7 @@ public class MstarCompiler {
         program.accept(symbolTableBuilder);
 
         if(errorRecorder.errorOccured()) {
-            errorRecorder.printTo(System.out);
+            errorRecorder.printTo(System.err);
             exit(1);
         }
 
@@ -67,7 +67,7 @@ public class MstarCompiler {
             exit(1);
         }
 
-        System.out.println("Successfully passed.");
+        System.err.println("Successfully passed.");
         exit(0);
     }
 }
