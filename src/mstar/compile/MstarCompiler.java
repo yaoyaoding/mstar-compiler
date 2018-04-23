@@ -49,6 +49,10 @@ public class MstarCompiler {
 
         Program program = astBuilder.getProgram();
 
+        AstPrinter astPrinter = new AstPrinter();
+        program.accept(astPrinter);
+        astPrinter.printTo(System.err);
+
         SymbolTableBuilder symbolTableBuilder = new SymbolTableBuilder(errorRecorder);
         program.accept(symbolTableBuilder);
 

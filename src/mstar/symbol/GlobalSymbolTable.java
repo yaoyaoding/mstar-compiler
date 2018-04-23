@@ -117,6 +117,8 @@ public class GlobalSymbolTable extends SymbolTable {
         f.name = "toString";
         f.returnType = stringType();
         f.location = new TokenLocation(0, 0);
+        f.parameterTypes.add(intType());
+        f.parameterNames.add("i");
         return f;
     }
     private void addDefaultPrimitives() {

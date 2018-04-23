@@ -282,10 +282,14 @@ public class AstBuilder extends MstarBaseVisitor<Object> {
         ArrayExpression expression = new ArrayExpression();
         expression.location = new TokenLocation(ctx);
         expression.address = (Expression)ctx.expression(0).accept(this);
+        if(expression.address instanceof NewExpression && ctx.expression(0).stop.getText().equals("]"))
+            errorRecorder.addRecord(expression.address.location, "can not use new a[n][i] to express (new a[n])[i]");
         expression.index = (Expression)ctx.expression(1).accept(this);
         return expression;
     }
-    @Override public Expression visitNewExpression(NewExpressionContext ctx) { return visitCreator(ctx.creator()); }
+    @Override public Expression visitNewExpression(NewExpressionContext ctx) {
+        return visitCreator(ctx.creator());
+    }
     @Override public Expression visitAssignExpression(AssignExpressionContext ctx) {
         AssignExpression expression = new AssignExpression();
         expression.location = new TokenLocation(ctx);
