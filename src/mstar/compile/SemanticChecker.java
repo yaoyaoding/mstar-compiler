@@ -206,11 +206,15 @@ public class SemanticChecker implements IAstVisitor {
     @Override
     public void visit(MemberExpression node) {
         node.object.accept(this);
-        if(node.methodCall != null) {
-            node.methodCall.accept(this);
-            node.modifiable = node.methodCall.modifiable;
+        if(node.object.type instanceof ArrayType) {
+            node.modifiable = false;
         } else {
-            node.modifiable = true;
+            if (node.methodCall != null) {
+                node.methodCall.accept(this);
+                node.modifiable = node.methodCall.modifiable;
+            } else {
+                node.modifiable = true;
+            }
         }
     }
 

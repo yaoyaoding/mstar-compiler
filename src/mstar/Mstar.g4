@@ -128,7 +128,7 @@ ELSE:   'else';
 
 
 INT_LITERAL:    [0-9][0-9]*;
-STRING_LITERAL: '"' ('\\"' | .)*?  '"';
+STRING_LITERAL: '"' ('\\"' | '\\\\' | .)*?  '"';
 IDENTIFIER:     [a-zA-Z][a-zA-Z0-9_]*;
 LINE_COMMENT:    '//'~[\n]*     ->  channel(HIDDEN);
 BLOCK_COMMENT:  '/*' .*? '*/'   ->  channel(HIDDEN);

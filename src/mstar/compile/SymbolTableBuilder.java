@@ -274,8 +274,11 @@ public class SymbolTableBuilder implements IAstVisitor {
 
     @Override
     public void visit(BlockStatement node) {
+        SymbolTable symbolTable = new SymbolTable(currentSymbolTable);
+        enter(symbolTable);
         for(Statement s : node.statements)
             s.accept(this);
+        leave();
     }
 
     @Override
@@ -360,7 +363,7 @@ public class SymbolTableBuilder implements IAstVisitor {
             node.type = null;
             return;
         }
-        for(int i = 0; i < dimension; i++)
+        for (int i = 0; i < dimension; i++)
             node.type = new ArrayType(node.type);
     }
 
@@ -379,7 +382,6 @@ public class SymbolTableBuilder implements IAstVisitor {
                 node.type = null;
             } else {
                 node.type = new PrimitiveType("int", globalSymbolTable.getPrimitiveSymbol("int"));
-                node.modifiable = false;
             }
         } else {
             ClassType classType = (ClassType) node.object.type;

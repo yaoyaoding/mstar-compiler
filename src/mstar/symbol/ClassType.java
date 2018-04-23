@@ -17,7 +17,7 @@ public class ClassType extends VariableType {
             if((otherName.equals("null") && name.equals("string")) || (otherName.equals("string") && name.equals("null")))
                 return false;
             else
-                return ((ClassType) other).name.equals("null") || ((ClassType) other).name.equals(name);
+                return otherName.equals("null") || name.equals("null") || ((ClassType) other).name.equals(name);
         } else
             return false;
     }
