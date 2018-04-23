@@ -42,6 +42,8 @@ public class GlobalSymbolTable extends SymbolTable {
         FunctionSymbol f = new FunctionSymbol();
         f.name = "length";
         f.location = new TokenLocation(0, 0);
+        f.parameterTypes.add(stringType());
+        f.parameterNames.add("this");
         f.returnType = intType();
         return f;
     }
@@ -50,6 +52,8 @@ public class GlobalSymbolTable extends SymbolTable {
         f.name = "substring";
         f.returnType = stringType();
         f.location = new TokenLocation(0, 0);
+        f.parameterTypes.add(stringType());
+        f.parameterNames.add("this");
         f.parameterTypes.add(intType());
         f.parameterNames.add("left");
         f.parameterTypes.add(intType());
@@ -61,7 +65,8 @@ public class GlobalSymbolTable extends SymbolTable {
         f.name = "parseInt";
         f.location = new TokenLocation(0, 0);
         f.returnType = intType();
-        f.parameterTypes.add(intType());
+        f.parameterTypes.add(stringType());
+        f.parameterNames.add("this");
         return f;
     }
     private FunctionSymbol stringOrd() {
@@ -69,6 +74,8 @@ public class GlobalSymbolTable extends SymbolTable {
         f.name = "ord";
         f.location = new TokenLocation(0, 0);
         f.returnType = intType();
+        f.parameterTypes.add(stringType());
+        f.parameterNames.add("this");
         f.parameterTypes.add(intType());
         f.parameterNames.add("pos");
         return f;

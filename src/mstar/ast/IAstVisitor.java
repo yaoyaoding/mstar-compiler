@@ -3,6 +3,7 @@ package mstar.ast;
 public interface IAstVisitor{
     void visit(Program node);
 
+    void visit(Declaration node);
     void visit(FuncDeclaration node);
     void visit(ClassDeclaration node);
     void visit(VariableDeclaration node);
@@ -16,6 +17,7 @@ public interface IAstVisitor{
     void visit(ForStatement node);
     void visit(WhileStatement node);
     void visit(IfStatement node);
+    void visit(ContinueStatement node);
     void visit(BreakStatement node);
     void visit(ReturnStatement node);
     void visit(BlockStatement node);

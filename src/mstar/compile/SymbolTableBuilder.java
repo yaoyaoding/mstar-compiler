@@ -136,6 +136,8 @@ public class SymbolTableBuilder implements IAstVisitor {
         symbol.name = funcDeclaration.name;
         symbol.location = funcDeclaration.location;
         symbol.returnType = resolveVariableType(funcDeclaration.retTypeNode);
+        if(symbol.returnType == null)
+            errorRecorder.addRecord(funcDeclaration.retTypeNode.location, "can not resolve type");
         symbol.functionSymbolTable = null;
         if(classSymbol != null) {
             symbol.parameterNames.add("this");
@@ -158,6 +160,9 @@ public class SymbolTableBuilder implements IAstVisitor {
             if(currentSymbolTable.getVariableSymbol(d.name) != null) {
                 errorRecorder.addRecord(d.location, "the variable has been defined");
             } else {
+                if(type instanceof PrimitiveType && ((PrimitiveType) type).name.equals("void")
+                        || type instanceof ClassType && ((ClassType) type).name.equals("null"))
+                    errorRecorder.addRecord(d.location, "can not define a class with type null or void");
                 d.symbol = new VariableSymbol(d.name, type, d.location);
                 currentSymbolTable.putVariableSymbol(d.name, d.symbol);
             }
@@ -191,12 +196,27 @@ public class SymbolTableBuilder implements IAstVisitor {
             registerFunction(d, null);
         for(ClassDeclaration d : node.classes)
             defineClassFields(d);
+        for(Declaration d : node.declarations) {
+            if(d instanceof VariableDeclaration)
+                defineVariable((VariableDeclaration)d);
+            else if(d instanceof ClassDeclaration)
+                defineClassFunctions((ClassDeclaration)d);
+            else
+                defineFunction((FuncDeclaration) d, null);
+        }
+        /*
         for(VariableDeclaration d : node.globalVariables)
             defineVariable(d);
         for(ClassDeclaration d : node.classes)
             defineClassFunctions(d);
         for(FuncDeclaration d : node.functions)
             defineFunction(d, null);
+        */
+    }
+
+    @Override
+    public void visit(Declaration node) {
+        assert false;
     }
 
     @Override public void visit(FuncDeclaration node) { }
@@ -239,8 +259,11 @@ public class SymbolTableBuilder implements IAstVisitor {
     }
 
     @Override
-    public void visit(BreakStatement node) {
+    public void visit(ContinueStatement node) {
+    }
 
+    @Override
+    public void visit(BreakStatement node) {
     }
 
     @Override
@@ -344,34 +367,45 @@ public class SymbolTableBuilder implements IAstVisitor {
     @Override
     public void visit(MemberExpression node) {
         node.object.accept(this);
-        if(!(node.object.type instanceof ClassType)) {
+        if(node.object.type instanceof PrimitiveType) {
             errorRecorder.addRecord(node.object.location, "the expression is not a class instance");
             node.type = null;
             return;
         }
-        ClassType classType = (ClassType)node.object.type;
-        if(node.fieldAccess != null) {
-            node.fieldAccess.symbol = resolveVariableSymbol(node.fieldAccess.name, classType.symbol.classSymbolTable);
-            if(node.fieldAccess.symbol == null) {
-                errorRecorder.addRecord(node.fieldAccess.location,
-                        "class '" + classType.name + "' has not field '" + node.fieldAccess.name+  "'" );
+        if(node.object.type instanceof ArrayType) {
+            ArrayType arrayType = (ArrayType)node.object.type;
+            if(node.methodCall == null || !node.methodCall.functionName.equals("size")) {
+                errorRecorder.addRecord(node.methodCall.location, "array type can only call size method");
                 node.type = null;
-                return;
+            } else {
+                node.type = new PrimitiveType("int", globalSymbolTable.getPrimitiveSymbol("int"));
+                node.modifiable = false;
             }
-            node.fieldAccess.type = node.fieldAccess.symbol.type;
-            node.type = node.fieldAccess.type;
         } else {
-            node.methodCall.functionSymbol = resolveFunctionSymbol(node.methodCall.functionName, classType.symbol.classSymbolTable);
-            if(node.methodCall.functionSymbol == null) {
-                errorRecorder.addRecord(node.methodCall.location,
-                        "class '" + classType.name + "' has not method '" + node.fieldAccess.name+  "'" );
-                node.type = null;
-                return;
+            ClassType classType = (ClassType) node.object.type;
+            if (node.fieldAccess != null) {
+                node.fieldAccess.symbol = resolveVariableSymbol(node.fieldAccess.name, classType.symbol.classSymbolTable);
+                if (node.fieldAccess.symbol == null) {
+                    errorRecorder.addRecord(node.fieldAccess.location,
+                            "class '" + classType.name + "' has not field '" + node.fieldAccess.name + "'");
+                    node.type = null;
+                    return;
+                }
+                node.fieldAccess.type = node.fieldAccess.symbol.type;
+                node.type = node.fieldAccess.type;
+            } else {
+                node.methodCall.functionSymbol = resolveFunctionSymbol(node.methodCall.functionName, classType.symbol.classSymbolTable);
+                if (node.methodCall.functionSymbol == null) {
+                    errorRecorder.addRecord(node.methodCall.location,
+                            "class '" + classType.name + "' has not method '" + node.fieldAccess.name + "'");
+                    node.type = null;
+                    return;
+                }
+                node.methodCall.type = node.methodCall.functionSymbol.returnType;
+                node.type = node.methodCall.type;
+                for (Expression e : node.methodCall.arguments)
+                    e.accept(this);
             }
-            node.methodCall.type = node.methodCall.functionSymbol.returnType;
-            node.type = node.methodCall.type;
-            for(Expression e : node.methodCall.arguments)
-                e.accept(this);
         }
     }
 
@@ -381,11 +415,22 @@ public class SymbolTableBuilder implements IAstVisitor {
         node.type = node.expression.type;
     }
 
+    private boolean isRelationOperator(String op) {
+        switch(op) {
+            case "==": case "!=": case "<": case "<=": case ">": case ">=":
+                return true;
+            default:
+                return false;
+        }
+    }
     @Override
     public void visit(BinaryExpression node) {
         node.lhs.accept(this);
         node.rhs.accept(this);
-        node.type = node.lhs.type;
+        if(isRelationOperator(node.op))
+            node.type = new PrimitiveType("bool", globalSymbolTable.getPrimitiveSymbol("bool"));
+        else
+            node.type = node.lhs.type;
     }
 
     @Override
@@ -402,306 +447,4 @@ public class SymbolTableBuilder implements IAstVisitor {
         node.rhs.accept(this);
         node.type = new PrimitiveType("void", globalSymbolTable.getPrimitiveSymbol("void"));
     }
-
-    /*
-    SymbolTable globalSymbolTable;
-    SymbolTable currentSymbolTable;
-    Stack<SymbolTable> symbolTableStack;
-    ErrorRecorder errorRecorder;
-
-    public SymbolTableBuilder(ErrorRecorder errorRecorder) {
-        this.globalSymbolTable = SymbolTable.mstarDefaultSymbolTable();
-        this.currentSymbolTable = globalSymbolTable;
-        this.symbolTableStack = new Stack<>();
-        this.symbolTableStack.push(globalSymbolTable);
-        this.errorRecorder = errorRecorder;
-    }
-
-    void enter(SymbolTable symbolTable) {
-        symbolTableStack.push(symbolTable);
-        currentSymbolTable = symbolTable;
-    }
-    void leave() {
-        symbolTableStack.pop();
-        assert(!symbolTableStack.empty());
-        currentSymbolTable = symbolTableStack.peek();
-    }
-    void addSymbol(Symbol symbol) {
-        if(currentSymbolTable.existSymbol(symbol.name)) {
-            errorRecorder.addRecord(symbol.location, "symbol redefine in the same scope, the last definition at "
-                    + currentSymbolTable.getSymbol(symbol.name).location);
-        } else {
-            currentSymbolTable.addSymbol(symbol);
-        }
-    }
-
-    Symbol resolveSymbol(String symbolName) {
-        int stack_size = symbolTableStack.size();
-        for(int i = stack_size - 1; i >= 0; i--) {
-            SymbolTable symbolTable = symbolTableStack.elementAt(i);
-            if(symbolTable.existSymbol(symbolName))
-                return symbolTable.getSymbol(symbolName);
-        }
-        return null;
-    }
-
-    VariableType resolveVarialbeType(TypeNode astTypeNode) {
-        if(astTypeNode instanceof PrimitiveTypeNode) {
-            PrimitiveTypeNode primitiveTypeNode = (PrimitiveTypeNode)astTypeNode;
-            return new PrimitiveType(primitiveTypeNode.name);
-        } else if(astTypeNode instanceof ArrayTypeNode) {
-            ArrayTypeNode arrayTypeNode = (ArrayTypeNode)astTypeNode;
-            if(arrayTypeNode.dimension == 1) {
-                return new ArrayType(resolveVarialbeType(((ArrayTypeNode) astTypeNode).baseType));
-            } else {
-                ArrayTypeNode newArrayTypeNode = new ArrayTypeNode();
-                newArrayTypeNode.baseType = arrayTypeNode.baseType;
-                newArrayTypeNode.dimension = arrayTypeNode.dimension - 1;
-                return new ArrayType(resolveVarialbeType(newArrayTypeNode));
-            }
-        } else if(astTypeNode instanceof ClassTypeNode) {
-            ClassTypeNode classTypeNode = (ClassTypeNode)astTypeNode;
-            if(globalSymbolTable.existSymbol(classTypeNode.className)) {
-                Symbol classSymbol = globalSymbolTable.getSymbol(classTypeNode.className);
-                if(classSymbol.type instanceof ClassType) {
-                    return (ClassType)classSymbol.type;
-                } else {
-                    errorRecorder.addRecord(astTypeNode.location, "the symbol '" + classTypeNode.className + "' is not a class");
-                    return null;
-                }
-            } else {
-                errorRecorder.addRecord(astTypeNode.location, "could not find class named '" + classTypeNode.className + "'");
-                return null;
-            }
-        } else {
-            assert(false);
-            return null;
-        }
-    }
-
-    void registerFunctionSignature(FuncDeclaration d) {
-        FunctionType functionType = new FunctionType();
-        functionType.name = d.name;
-        functionType.returnType = resolveVarialbeType(d.retTypeNode);
-        functionType.funcSymbolTable.parent = currentSymbolTable;
-        enter(functionType.funcSymbolTable);
-        for(VariableDeclaration vd : d.parameters)
-            vd.accept(this);
-        for(Map.Entry<String,Symbol> entry : currentSymbolTable.symbols.entrySet()) {
-            functionType.parameterNames.add(entry.getKey());
-            functionType.parameterTypes.add((VariableType) entry.getValue().type);
-        }
-        leave();
-        addSymbol(new Symbol(d.name, functionType, d.location));
-    }
-
-    public void visit(Program node) {
-        for(ClassDeclaration d : node.classes) {
-            ClassType classType = new ClassType();
-            classType.name = d.name;
-            classType.members = new SymbolTable();
-            globalSymbolTable.children.add(classType.members);
-            addSymbol(new Symbol(d.name, classType, d.location));
-        }
-        for(FuncDeclaration d : node.functions) {
-            registerFunctionSignature(d);
-        }
-        for(VariableDeclaration d : node.globalVariables)
-            d.accept(this);
-        for(ClassDeclaration d : node.classes)
-            d.accept(this);
-        for(FuncDeclaration d : node.functions)
-            d.accept(this);
-    }
-
-    public void visit(VariableDeclaration node) {
-        Symbol var = new Symbol();
-        var.name = node.name;
-        var.type = new ObjectType(resolveVarialbeType(node.typeNode));
-        var.location = node.location;
-        if(node.init != null)
-            node.init.accept(this);
-        addSymbol(var);
-    }
-    public void visit(FuncDeclaration node) {
-        Symbol functionSymbol = resolveSymbol(node.name);
-        if(!(functionSymbol.type instanceof FunctionType)) return;
-        FunctionType functionType = (FunctionType)functionSymbol.type;
-        enter(functionType.funcSymbolTable);
-        for(Statement s : node.body)
-            s.accept(this);
-        leave();
-    }
-    public void visit(ClassDeclaration node) {
-        Symbol classSymbol = globalSymbolTable.getSymbol(node.name);
-        if(!(classSymbol.type instanceof ClassType)) return;
-        ClassType classType = (ClassType)classSymbol.type;
-        enter(classType.members);
-        for(VariableDeclaration d : node.fields) {
-            if(d.name.equals(node.name)) {
-                errorRecorder.addRecord(d.location, "field can not have the same name with class");
-                continue;
-            }
-            d.accept(this);
-        }
-        List<FuncDeclaration> functions = new LinkedList<>();
-        functions.addAll(node.methods);
-        functions.add(node.constructor);
-        for(FuncDeclaration d : functions)
-            registerFunctionSignature(d);
-        leave();
-    }
-
-    public void visit(TypeNode node) {
-        assert(false);
-    }
-
-    public void visit(ArrayTypeNode node) {
-        node.baseType.accept(this);
-    }
-    public void visit(PrimitiveTypeNode node) {
-        Symbol symbol = globalSymbolTable.getSymbol(node.name);
-        assert(symbol != null);
-        node.symbol = symbol;
-    }
-    public void visit(ClassTypeNode node) {
-        Symbol symbol = globalSymbolTable.getSymbol(node.className);
-        assert(symbol != null);
-        node.symbol = symbol;
-    }
-
-    public void visit(Statement node) {
-        assert(false);
-    }
-    public void visit(ForStatement node) {
-        node.initStatement.accept(this);
-        node.condition.accept(this);
-        node.updateStatement.accept(this);
-        node.body.accept(this);
-    }
-    public void visit(WhileStatement node) {
-        node.condition.accept(this);
-        node.body.accept(this);
-    }
-    public void visit(IfStatement node) {
-        node.condition.accept(this);
-        node.thenStatement.accept(this);
-        node.elseStatement.accept(this);
-    }
-    public void visit(BreakStatement node) {
-    }
-    public void visit(ReturnStatement node) {
-        if(node.retExpression != null)
-            node.retExpression.accept(this);
-    }
-    public void visit(BlockStatement node) {
-        SymbolTable blockSymbolTable = new SymbolTable();
-        blockSymbolTable.parent = currentSymbolTable;
-        currentSymbolTable.children.add(blockSymbolTable);
-        enter(blockSymbolTable);
-        for(Statement s : node.statements)
-            s.accept(this);
-        leave();
-    }
-    public void visit(VarDeclStatement node) {
-        node.declaration.accept(this);
-    }
-    public void visit(ExprStatement node) {
-        node.expression.accept(this);
-    }
-
-    public void visit(Expression node) { assert(false); }
-    public void visit(Identifier node) {
-        System.out.println("There are " + symbolTableStack.size() + "symboltables");
-        Symbol symbol = resolveSymbol(node.name);
-        if(symbol == null) {
-            System.out.println("no");
-        }
-        if(symbol == null) {
-//            errorRecorder.addRecord(node.location, "can not resolve symbol '" + node.name + "'");
-            node.symbol = null;
-            node.type = null;
-        } else if(!(symbol.type instanceof ObjectType)) {
-            errorRecorder.addRecord(node.location, "expected variable, but '" + node.name + "' is a function or type");
-            node.symbol = null;
-            node.type = null;
-        } else {
-            node.symbol = symbol;
-            node.type = ((ObjectType) symbol.type).variableType;
-        }
-    }
-
-    public void visit(LiteralExpression node) {
-        switch (node.typeName) {
-            case "int": case "null": case "bool": case "string":
-                node.type = (VariableType)globalSymbolTable.getSymbol(node.typeName).type;
-                break;
-            default:
-                assert(false);
-        }
-    }
-
-    public void visit(FuncCallExpression node) {
-        Symbol functionSymbol = resolveSymbol(node.functionName);
-        if(functionSymbol.type instanceof FunctionType) {
-            node.functionSymbol = functionSymbol;
-            node.type = ((FunctionType)node.functionSymbol.type).returnType;
-        } else {
-            errorRecorder.addRecord(node.location, "can not resolve function '" + node.functionName + "'");
-            node.functionSymbol = null;
-            node.type = null;
-        }
-    }
-    public void visit(NewExpression node) {
-        node.baseType = resolveVarialbeType(node.typeNode);
-        node.type = node.baseType;
-    }
-    public void visit(UnaryExpression node) {
-        node.expression.accept(this);
-        node.type = node.expression.type;
-    }
-    public void visit(MemberExpression node) {
-        node.object.accept(this);
-        if(!(node.object.type instanceof ClassType)) {
-            errorRecorder.addRecord(node.location, "the type of expression is not class type, can not do member process");
-        } else {
-            ClassType classType = (ClassType) node.object.type;
-            enter(classType.members);
-            if (node.methodCall != null) {  //  method call
-                node.methodCall.accept(this);
-                if(node.methodCall.functionSymbol == null) {
-                    errorRecorder.addRecord(node.methodCall.location, "the class '" + classType.name + "' has not method '" + node.methodCall.functionName+ "'");
-                    node.type = PrimitiveType.voidPrimitiveType();
-                } else {
-                    node.type = ((FunctionType) node.methodCall.functionSymbol.type).returnType;
-                }
-            } else {    //  field access
-                node.fieldAccess.accept(this);
-                if(node.fieldAccess.symbol == null) {
-                    errorRecorder.addRecord(node.fieldAccess.location, "the class '" + classType.name + "' has not field '" + node.fieldAccess.name + "'" );
-                    node.type = PrimitiveType.voidPrimitiveType();
-                } else {
-                    node.type = (VariableType) node.fieldAccess.symbol.type;
-                }
-            }
-            leave();
-        }
-    }
-    public void visit(BinaryExpression node) {
-        node.lhs.accept(this);
-        node.rhs.accept(this);
-        node.type = node.lhs.type;
-    }
-    public void visit(TernaryExpression node) {
-        node.condition.accept(this);
-        node.exprTrue.accept(this);
-        node.exprFalse.accept(this);
-        node.type = node.exprTrue.type;
-    }
-    public void visit(AssignExpression node) {
-        node.lhs.accept(this);
-        node.rhs.accept(this);
-        node.type = PrimitiveType.voidPrimitiveType();
-    }
-    */
 }

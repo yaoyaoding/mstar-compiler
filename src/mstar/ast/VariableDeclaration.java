@@ -3,7 +3,7 @@ package mstar.ast;
 
 import mstar.symbol.VariableSymbol;
 
-public class VariableDeclaration extends AstNode {
+public class VariableDeclaration extends Declaration {
     public TypeNode typeNode = null;
     public String name = null;
     public Expression init = null;

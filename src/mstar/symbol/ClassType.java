@@ -12,9 +12,13 @@ public class ClassType extends VariableType {
 
     @Override
     public boolean match(VariableType other) {
-        if(other instanceof ClassType)
-            return ((ClassType) other).name.equals("null") || ((ClassType) other).name.equals(name);
-        else
+        if(other instanceof ClassType) {
+            String otherName = ((ClassType) other).name;
+            if((otherName.equals("null") && name.equals("string")) || (otherName.equals("string") && name.equals("null")))
+                return false;
+            else
+                return ((ClassType) other).name.equals("null") || ((ClassType) other).name.equals(name);
+        } else
             return false;
     }
 }

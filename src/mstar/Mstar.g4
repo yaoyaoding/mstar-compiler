@@ -25,7 +25,7 @@ type
     ;
 empty
     :;
-name
+primitiveType
     :   token=INT
     |   token=BOOL
     |   token=VOID
@@ -35,7 +35,7 @@ classType
     |   token=IDENTIFIER
     ;
 atomType
-    :   name
+    :   primitiveType
     |   classType
     ;
 parameterList
@@ -53,7 +53,7 @@ statementList
 statement
     :   IF '(' expression ')' statement ( ELSE statement ) ?    #   ifStatement
     |   WHILE '(' expression ')' statement          #   whileStatement
-    |   FOR '(' expression? ';' expression? ';' expression? ')' statement            #   forStatement
+    |   FOR '(' forInit=expression? ';' forCondition=expression? ';' forUpdate=expression? ')' statement            #   forStatement
     |   BREAK ';'                       #   breakStatement
     |   CONTINUE ';'                    #   continueStatement
     |   RETURN expression ? ';'         #   returnStatement

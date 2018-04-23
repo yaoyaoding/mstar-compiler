@@ -59,6 +59,11 @@ public class AstPrinter implements IAstVisitor {
     }
 
     @Override
+    public void visit(Declaration node) {
+        assert false;
+    }
+
+    @Override
     public void visit(FuncDeclaration node) {
         appendNewLine("function: " + node.name );
         if(node.retTypeNode != null) {     //  not constructor
@@ -191,6 +196,11 @@ public class AstPrinter implements IAstVisitor {
             unindent();
         }
         unindent();
+    }
+
+    @Override
+    public void visit(ContinueStatement node) {
+        appendNewLine("continue");
     }
 
     @Override

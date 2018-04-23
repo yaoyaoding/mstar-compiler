@@ -4,7 +4,7 @@ import mstar.symbol.ClassSymbol;
 
 import java.util.List;
 
-public class ClassDeclaration extends AstNode {
+public class ClassDeclaration extends Declaration {
     public String name = null;
     public List<VariableDeclaration> fields;
     public List<FuncDeclaration> methods;

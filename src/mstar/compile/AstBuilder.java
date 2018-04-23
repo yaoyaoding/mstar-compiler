@@ -26,11 +26,12 @@ public class AstBuilder extends MstarBaseVisitor<Object> {
     @Override public Object visitCompilationUnit(CompilationUnitContext ctx) {
         for(GlobalDeclarationContext c : ctx.globalDeclaration()) {
             if(c.classDeclaration() != null)
-                program.classes.add(visitClassDeclaration(c.classDeclaration()));
+                program.add(visitClassDeclaration(c.classDeclaration()));
             else if(c.functionDeclaration() != null)
-                program.functions.add(visitFunctionDeclaration(c.functionDeclaration()));
-            else
-                program.globalVariables.addAll(visitVariableDeclaration(c.variableDeclaration()));
+                program.add(visitFunctionDeclaration(c.functionDeclaration()));
+            else {
+                program.addAll(visitVariableDeclaration(c.variableDeclaration()));
+            }
         }
         return null;
     }
@@ -182,12 +183,12 @@ public class AstBuilder extends MstarBaseVisitor<Object> {
     @Override public Statement visitForStatement(ForStatementContext ctx) {
         ForStatement forStatement = new ForStatement();
         forStatement.location = new TokenLocation(ctx);
-        if(ctx.expression(0) != null)
-            forStatement.initStatement = new ExprStatement((Expression)ctx.expression(0).accept(this));
-        if(ctx.expression(1) != null)
-            forStatement.condition = (Expression)ctx.expression(1).accept(this);
-        if(ctx.expression(2) != null)
-            forStatement.updateStatement = new ExprStatement((Expression)ctx.expression(2).accept(this));
+        if(ctx.forInit != null)
+            forStatement.initStatement = new ExprStatement((Expression)ctx.forInit.accept(this));
+        if(ctx.forCondition != null)
+            forStatement.condition = (Expression)ctx.forCondition.accept(this);
+        if(ctx.forUpdate != null)
+            forStatement.updateStatement = new ExprStatement((Expression)ctx.forUpdate.accept(this));
         forStatement.body = (Statement)ctx.statement().accept(this);
         return forStatement;
     }

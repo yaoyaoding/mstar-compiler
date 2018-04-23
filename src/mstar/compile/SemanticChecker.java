@@ -22,9 +22,21 @@ public class SemanticChecker implements IAstVisitor {
             d.accept(this);
         for(ClassDeclaration d : node.classes)
             d.accept(this);
-        if(globalSymbolTable.functions.get("main") == null)
+        FunctionSymbol mainFuntion = globalSymbolTable.getFunctionSymbol("main");
+        if(mainFuntion == null) {
             errorRecorder.addRecord(node.location, "main function has not been found");
+        } else {
+            if(mainFuntion.returnType instanceof PrimitiveType && ((PrimitiveType) mainFuntion.returnType).name.equals("int")) {
+                if(mainFuntion.parameterTypes.size() > 0)
+                    errorRecorder.addRecord(mainFuntion.location, "main function has to have no parameters");
+            } else {
+                errorRecorder.addRecord(mainFuntion.location, "main function has to return int type");
+            }
+        }
     }
+
+    @Override
+    public void visit(Declaration node) { assert false; }
 
     @Override
     public void visit(FuncDeclaration node) {
@@ -66,19 +78,31 @@ public class SemanticChecker implements IAstVisitor {
         assert false;
     }
 
+    private void checkBooleanExpression(Expression e) {
+        if(e.type instanceof PrimitiveType && ((PrimitiveType) e.type).name.equals("bool"))
+            return;
+        else
+            errorRecorder.addRecord(e.location, "condition must have to be a boolean expression");
+    }
     @Override
     public void visit(ForStatement node) {
-        node.initStatement.accept(this);
-        node.condition.accept(this);
-        node.updateStatement.accept(this);
+        if(node.initStatement != null)
+            node.initStatement.accept(this);
+        if(node.condition != null) {
+            node.condition.accept(this);
+            checkBooleanExpression(node.condition);
+        }
+        if(node.updateStatement != null)
+            node.updateStatement.accept(this);
         loopCount++;
-        node.updateStatement.accept(this);
+        node.body.accept(this);
         loopCount--;
     }
 
     @Override
     public void visit(WhileStatement node) {
         node.condition.accept(this);
+        checkBooleanExpression(node.condition);
         loopCount++;
         node.body.accept(this);
         loopCount--;
@@ -87,9 +111,17 @@ public class SemanticChecker implements IAstVisitor {
     @Override
     public void visit(IfStatement node) {
         node.condition.accept(this);
+        checkBooleanExpression(node.condition);
         node.thenStatement.accept(this);
         if(node.elseStatement != null)
             node.elseStatement.accept(this);
+    }
+
+    @Override
+    public void visit(ContinueStatement node) {
+        if(loopCount == 0) {
+            errorRecorder.addRecord(node.location, "there is not an outer loop statement");
+        }
     }
 
     @Override
@@ -152,19 +184,16 @@ public class SemanticChecker implements IAstVisitor {
     @Override
     public void visit(FuncCallExpression node) {
         int parameterCount = node.functionSymbol.parameterTypes.size();
-        if(node.arguments.size() != parameterCount) {
+        int inClass = (node.functionSymbol.parameterNames.size() > 0 && node.functionSymbol.parameterNames.get(0).equals("this") ? 1 : 0);
+        if(node.arguments.size() + inClass != parameterCount) {
             errorRecorder.addRecord(node.location, "the number of requried arguments is different from given arguments");
         } else {
-            for (int i = 0; i < parameterCount; i++) {
-                if(!node.arguments.get(i).type.match(node.functionSymbol.parameterTypes.get(i)))
+            for (int i = 0; i < parameterCount - inClass; i++) {
+                if(!node.arguments.get(i).type.match(node.functionSymbol.parameterTypes.get(i + inClass)))
                     errorRecorder.addRecord(node.arguments.get(i).location, "the type of this parameter is conflict with required type");
             }
         }
-        if(node.functionSymbol.returnType instanceof PrimitiveType) {
-            node.modifiable = false;
-        } else {
-            node.modifiable = true;
-        }
+        node.modifiable = false;
     }
 
     @Override
@@ -284,9 +313,7 @@ public class SemanticChecker implements IAstVisitor {
     @Override
     public void visit(TernaryExpression node) {
         node.condition.accept(this);
-        if(!isBoolType(node.condition.type)) {
-            errorRecorder.addRecord(node.location, "condition of ternary must be a boolean type expression");
-        }
+        checkBooleanExpression(node.condition);
         node.exprTrue.accept(this);
         node.exprFalse.accept(this);
         if(!node.exprTrue.type.match(node.exprFalse.type))

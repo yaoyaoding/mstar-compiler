@@ -35,7 +35,7 @@ public class MstarParser extends Parser {
 		RULE_creator = 20, RULE_functionCall = 21;
 	public static final String[] ruleNames = {
 		"compilationUnit", "globalDeclaration", "functionDeclaration", "classDeclaration", 
-		"constructorDeclaration", "fieldDeclaration", "type", "empty", "name",
+		"constructorDeclaration", "fieldDeclaration", "type", "empty", "primitiveType", 
 		"classType", "atomType", "parameterList", "parameter", "functionBody", 
 		"statementList", "statement", "variableDeclaration", "variableDeclarators", 
 		"variableDeclarator", "expression", "creator", "functionCall"
@@ -993,6 +993,9 @@ public class MstarParser extends Parser {
 		}
 	}
 	public static class ForStatementContext extends StatementContext {
+		public ExpressionContext forInit;
+		public ExpressionContext forCondition;
+		public ExpressionContext forUpdate;
 		public TerminalNode FOR() { return getToken(MstarParser.FOR, 0); }
 		public StatementContext statement() {
 			return getRuleContext(StatementContext.class,0);
@@ -1126,7 +1129,7 @@ public class MstarParser extends Parser {
 				if ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << T__1) | (1L << T__10) | (1L << T__11) | (1L << T__12) | (1L << T__13) | (1L << T__14) | (1L << T__15) | (1L << BOOL_LITERAL) | (1L << NULL_LITERAL) | (1L << THIS) | (1L << NEW) | (1L << INT_LITERAL) | (1L << STRING_LITERAL) | (1L << IDENTIFIER))) != 0)) {
 					{
 					setState(156);
-					expression(0);
+					((ForStatementContext)_localctx).forInit = expression(0);
 					}
 				}
 
@@ -1138,7 +1141,7 @@ public class MstarParser extends Parser {
 				if ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << T__1) | (1L << T__10) | (1L << T__11) | (1L << T__12) | (1L << T__13) | (1L << T__14) | (1L << T__15) | (1L << BOOL_LITERAL) | (1L << NULL_LITERAL) | (1L << THIS) | (1L << NEW) | (1L << INT_LITERAL) | (1L << STRING_LITERAL) | (1L << IDENTIFIER))) != 0)) {
 					{
 					setState(160);
-					expression(0);
+					((ForStatementContext)_localctx).forCondition = expression(0);
 					}
 				}
 
@@ -1150,7 +1153,7 @@ public class MstarParser extends Parser {
 				if ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << T__1) | (1L << T__10) | (1L << T__11) | (1L << T__12) | (1L << T__13) | (1L << T__14) | (1L << T__15) | (1L << BOOL_LITERAL) | (1L << NULL_LITERAL) | (1L << THIS) | (1L << NEW) | (1L << INT_LITERAL) | (1L << STRING_LITERAL) | (1L << IDENTIFIER))) != 0)) {
 					{
 					setState(164);
-					expression(0);
+					((ForStatementContext)_localctx).forUpdate = expression(0);
 					}
 				}
 
