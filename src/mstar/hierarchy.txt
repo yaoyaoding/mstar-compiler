@@ -37,11 +37,16 @@ package ast
 
 
 package symbol
-    Type
-        VariableType
-            PrimitiveType
-            ClassType
-            ArrayType
-        FunctionType
-    Symbol
+    TypeSymbol
+        ClassSymbol
+        PrimitiveSymbol
+    FunctionSymbol
+    VariableSymbol
+
+    VariableType
+        PrimitiveType
+        ClassType
+        ArrayType
+
     SymbolTable
+

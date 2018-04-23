@@ -1,4 +1,7 @@
 package mstar.symbol;
 
-public abstract class VariableType extends Type{
+public abstract class VariableType {
+
+    public abstract boolean match(VariableType other);
 }
+

@@ -9,6 +9,7 @@ public class LiteralExpression extends Expression {
     public String value;
 
     public LiteralExpression(Token token) {
+        location = new TokenLocation(token);
         switch(token.getType()) {
             case INT_LITERAL:
                 typeName = "int";
@@ -59,10 +60,5 @@ public class LiteralExpression extends Expression {
         return stringBuilder.toString();
     }
     @Override public void accept(IAstVisitor visitor) { visitor.visit(this); }
-
-    @Override
-    public String toFString(String indent) {
-        return null;
-    }
 }
 

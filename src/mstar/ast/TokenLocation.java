@@ -25,6 +25,6 @@ public class TokenLocation {
 
     @Override
     public String toString() {
-        return "row " + row + " column " + column;
+        return "(" + row + "," + column + ")";
     }
 }

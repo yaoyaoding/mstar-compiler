@@ -1,5 +1,7 @@
 package mstar.compile;
 
+import mstar.ast.Program;
+import mstar.symbol.GlobalSymbolTable;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.ParseTree;
 
@@ -9,6 +11,8 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import mstar.parser.*;
+
+import static java.lang.System.exit;
 
 
 public class MstarSemantic {
@@ -30,10 +34,40 @@ public class MstarSemantic {
         //  parse the input and build the parse tree
         ParseTree parseTree = parser.compilationUnit();
 
+        if(errorRecorder.errorOccured()) {
+            errorRecorder.printTo(System.out);
+            exit(1);
+        }
+
         AstBuilder astBuilder = new AstBuilder(errorRecorder);
         astBuilder.visit(parseTree);
 
-        System.out.print(astBuilder.program.toFString(""));
+        if(errorRecorder.errorOccured()) {
+            errorRecorder.printTo(System.out);
+            exit(1);
+        }
+
+        Program program = astBuilder.getProgram();
+
+        SymbolTableBuilder symbolTableBuilder = new SymbolTableBuilder(errorRecorder);
+        program.accept(symbolTableBuilder);
+
+        if(errorRecorder.errorOccured()) {
+            errorRecorder.printTo(System.out);
+            exit(1);
+        }
+
+        GlobalSymbolTable globalSymbolTable = symbolTableBuilder.globalSymbolTable;
+        SemanticChecker semanticChecker = new SemanticChecker(globalSymbolTable, errorRecorder);
+
+        program.accept(semanticChecker);
+
+        if(errorRecorder.errorOccured()) {
+            errorRecorder.printTo(System.out);
+            exit(1);
+        }
+
+        System.out.println("Successfully passed.");
     }
 }
 

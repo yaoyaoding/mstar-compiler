@@ -25,17 +25,17 @@ type
     ;
 empty
     :;
-primitiveType
-    :   token=STRING
-    |   token=INT
+name
+    :   token=INT
     |   token=BOOL
     |   token=VOID
     ;
 classType
-    :   IDENTIFIER
+    :   token=STRING
+    |   token=IDENTIFIER
     ;
 atomType
-    :   primitiveType
+    :   name
     |   classType
     ;
 parameterList

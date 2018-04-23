@@ -1,12 +1,13 @@
 package mstar.ast;
 
-public interface IAstVisitor {
+public interface IAstVisitor{
     void visit(Program node);
 
     void visit(FuncDeclaration node);
     void visit(ClassDeclaration node);
     void visit(VariableDeclaration node);
 
+    void visit(TypeNode node);
     void visit(ArrayTypeNode node);
     void visit(PrimitiveTypeNode node);
     void visit(ClassTypeNode node);
@@ -22,15 +23,13 @@ public interface IAstVisitor {
     void visit(ExprStatement node);
 
     void visit(Expression node);
-    void visit(IntLiteral node);
-    void visit(BoolLiteral node);
-    void visit(StringLiteral node);
-    void visit(NullLiteral node);
     void visit(Identifier node);
+    void visit(LiteralExpression node);
+    void visit(ArrayExpression node);
     void visit(FuncCallExpression node);
     void visit(NewExpression node);
-    void visit(UnaryExpression node);
     void visit(MemberExpression node);
+    void visit(UnaryExpression node);
     void visit(BinaryExpression node);
     void visit(TernaryExpression node);
     void visit(AssignExpression node);

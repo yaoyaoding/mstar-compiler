@@ -1,5 +1,7 @@
 package mstar.ast;
 
+import mstar.symbol.FunctionSymbol;
+
 import java.util.LinkedList;
 import java.util.List;
 
@@ -9,35 +11,20 @@ public class FuncDeclaration extends AstNode {
     public List<VariableDeclaration> parameters;
     public List<Statement> body;
 
+    public FunctionSymbol symbol;
+
     public String toString() {
         return name + "\n";
     }
 
     public static FuncDeclaration defaultConstructor(String name) {
         FuncDeclaration constructor = new FuncDeclaration();
-        constructor.retTypeNode = null;
+        constructor.retTypeNode = new PrimitiveTypeNode("void");
         constructor.name = name;
         constructor.parameters = new LinkedList<>();
         constructor.body = new LinkedList<>();
         return constructor;
     }
-    @Override public void accept(IAstVisitor visitor) { visitor.visit(this); }
 
-    @Override
-    public String toFString(String indent) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(indent + "function: " + name + "\n");
-        if(retTypeNode != null)     //  not constructor
-            sb.append(indent + "return type:" + retTypeNode.toFString("") + "\n");
-        sb.append(indent + "parameters:");
-        for(VariableDeclaration vd : parameters) {
-            sb.append(vd.toFString("") + ",");
-        }
-        sb.append("\n");
-        sb.append(indent + "body:\n");
-        for(Statement s : body) {
-            sb.append(s.toFString(indent + indentInc));
-        }
-        return sb.toString();
-    }
+    @Override public void accept(IAstVisitor visitor) { visitor.visit(this); }
 }

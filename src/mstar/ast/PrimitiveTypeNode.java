@@ -1,8 +1,12 @@
 package mstar.ast;
 
 public class PrimitiveTypeNode extends TypeNode {
-    public String primitiveType = null;
+    public String name;
+
+    public PrimitiveTypeNode() { }
+    public PrimitiveTypeNode(String name) { this.name = name; }
+
 
     @Override public void accept(IAstVisitor visitor) { visitor.visit(this); }
 
-    @Override public String toFString(String indent) { return indent + primitiveType; } }
+}

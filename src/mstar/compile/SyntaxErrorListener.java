@@ -7,7 +7,6 @@ import org.antlr.v4.runtime.Recognizer;
 
 
 public class SyntaxErrorListener extends BaseErrorListener {
-    private boolean error = false;
     private ErrorRecorder errorRecorder;
 
     public SyntaxErrorListener(ErrorRecorder errorRecorder) {
@@ -30,6 +29,6 @@ public class SyntaxErrorListener extends BaseErrorListener {
     }
 
     public boolean isError() {
-        return error;
+        return errorRecorder.errorOccured();
     }
 }

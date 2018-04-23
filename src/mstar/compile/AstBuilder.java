@@ -9,7 +9,6 @@ import java.util.List;
 
 import static mstar.parser.MstarParser.*;
 
-
 public class AstBuilder extends MstarBaseVisitor<Object> {
     public Program program;
     public ErrorRecorder errorRecorder;
@@ -18,6 +17,10 @@ public class AstBuilder extends MstarBaseVisitor<Object> {
         this.program = new Program();
         this.program.location = new TokenLocation(0,0);
         this.errorRecorder = errorRecorder;
+    }
+
+    public Program getProgram() {
+        return program;
     }
 
     @Override public Object visitCompilationUnit(CompilationUnitContext ctx) {
@@ -64,7 +67,12 @@ public class AstBuilder extends MstarBaseVisitor<Object> {
 
         //  methods
         for(FunctionDeclarationContext c : ctx.functionDeclaration()) {
-            classDeclaration.methods.add(visitFunctionDeclaration(c));
+            FuncDeclaration d = visitFunctionDeclaration(c);
+            if(d.name.equals(classDeclaration.name)) {
+                errorRecorder.addRecord(new TokenLocation(c), "constructor can not have return value");
+                continue;
+            }
+            classDeclaration.methods.add(d);
         }
 
         return classDeclaration;
@@ -72,7 +80,7 @@ public class AstBuilder extends MstarBaseVisitor<Object> {
     @Override public FuncDeclaration visitConstructorDeclaration(ConstructorDeclarationContext ctx) {
         FuncDeclaration constructor = new FuncDeclaration();
         constructor.location = new TokenLocation(ctx);
-        constructor.retTypeNode = null;
+        constructor.retTypeNode = new PrimitiveTypeNode("void");
         constructor.name = ctx.IDENTIFIER().getSymbol().getText();
         constructor.parameters = visitParameterList(ctx.parameterList());
         constructor.body = visitStatementList(ctx.functionBody().statementList());
@@ -95,8 +103,9 @@ public class AstBuilder extends MstarBaseVisitor<Object> {
     }
 
     @Override public TypeNode visitType(TypeContext ctx) {
-        if(ctx.empty() == null) {     //  atom type
-            return visitAtomType(ctx.atomType());
+        if(ctx.empty().isEmpty()) {     //  atom type
+            TypeNode ret = visitAtomType(ctx.atomType());
+            return ret;
         } else {    //  array type
             ArrayTypeNode arrayTypeNode = new ArrayTypeNode();
             arrayTypeNode.location = new TokenLocation(ctx);
@@ -108,19 +117,20 @@ public class AstBuilder extends MstarBaseVisitor<Object> {
     @Override public PrimitiveTypeNode visitPrimitiveType(PrimitiveTypeContext ctx) {
         PrimitiveTypeNode primitiveTypeNode = new PrimitiveTypeNode();
         primitiveTypeNode.location = new TokenLocation(ctx);
-        primitiveTypeNode.primitiveType = ctx.token.getText();
+        primitiveTypeNode.name = ctx.token.getText();  //  may be:
         return primitiveTypeNode;
     }
     @Override public TypeNode visitAtomType(AtomTypeContext ctx) {
-        if(ctx.primitiveType() != null)
+        if(ctx.primitiveType() != null) {
             return visitPrimitiveType(ctx.primitiveType());
-        else
+        } else {
             return visitClassType(ctx.classType());
+        }
     }
     @Override public ClassTypeNode visitClassType(ClassTypeContext ctx) {
         ClassTypeNode classTypeNode = new ClassTypeNode();
         classTypeNode.location = new TokenLocation(ctx);
-        classTypeNode.className = ctx.IDENTIFIER().getSymbol().getText();
+        classTypeNode.className = ctx.token.getText();
         return classTypeNode;
     }
     @Override public List<VariableDeclaration> visitParameterList(ParameterListContext ctx) {
@@ -254,22 +264,10 @@ public class AstBuilder extends MstarBaseVisitor<Object> {
     @Override public Expression visitPrimaryExpression(PrimaryExpressionContext ctx) {
         if(ctx.token == null)
             return (Expression)ctx.expression().accept(this);
+        else if(ctx.token.getType() == IDENTIFIER || ctx.token.getType() == THIS)
+            return new Identifier(ctx.token);
         else
             return new LiteralExpression(ctx.token);
-        switch(ctx.token.getType()) {
-            case THIS:
-                return new Identifier(ctx.token);
-            case INT_LITERAL:
-                return new IntLiteral(ctx.token);
-            case STRING_LITERAL:
-                return new StringLiteral(ctx.token);
-            case BOOL_LITERAL:
-                return new BoolLiteral(ctx.token);
-            case NULL_LITERAL:
-                return new NullLiteral(ctx.token);
-            default:    //  Identifier
-                return new Identifier(ctx.token);
-        }
     }
     @Override public Expression visitBinaryExpression(BinaryExpressionContext ctx) {
         BinaryExpression expression = new BinaryExpression();
@@ -321,8 +319,8 @@ public class AstBuilder extends MstarBaseVisitor<Object> {
         TernaryExpression expression = new TernaryExpression();
         expression.location = new TokenLocation(ctx);
         expression.condition = (Expression)ctx.expression(0).accept(this);
-        expression.expr1= (Expression)ctx.expression(1).accept(this);
-        expression.expr2= (Expression)ctx.expression(2).accept(this);
+        expression.exprTrue = (Expression)ctx.expression(1).accept(this);
+        expression.exprFalse = (Expression)ctx.expression(2).accept(this);
         return expression;
     }
     @Override public Expression visitMemberExpression(MemberExpressionContext ctx) {
@@ -330,7 +328,7 @@ public class AstBuilder extends MstarBaseVisitor<Object> {
         expression.location = new TokenLocation(ctx);
         expression.object = (Expression)ctx.expression().accept(this);
         if(ctx.IDENTIFIER() != null) {
-            expression.fieldName = ctx.IDENTIFIER().getSymbol().getText();
+            expression.fieldAccess = new Identifier(ctx.IDENTIFIER().getSymbol());
         } else {
             expression.methodCall = visitFunctionCall(ctx.functionCall());
         }
