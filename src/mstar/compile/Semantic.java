@@ -15,7 +15,7 @@ import mstar.parser.*;
 import static java.lang.System.exit;
 
 
-public class MstarSemantic {
+public class Semantic {
     public static void main(String[] args) throws IOException {
         InputStream is = new FileInputStream("program.txt");
         ANTLRInputStream ais = new ANTLRInputStream(is);
@@ -68,6 +68,7 @@ public class MstarSemantic {
         }
 
         System.out.println("Successfully passed.");
+        exit(0);
     }
 }
 
