@@ -1,5 +1,7 @@
+int a;
 int main() {
-    int[] a = new int[1][][1];
+    int[] a = (new int[1][])[1];
+    int a = 3;
     return 0;
 }
 

@@ -3,9 +3,10 @@ The Hierarchy of the data package
 package ast
     AstNode
         Program
-        FuncDeclaration
-        ClassDeclaration
-        VariableDeclaration
+        Declaration
+            FuncDeclaration
+            ClassDeclaration
+            VariableDeclaration
         TypeNode
             ArrayTypeNode
             PrimitiveTypeNode
@@ -37,9 +38,8 @@ package ast
 
 
 package symbol
-    TypeSymbol
-        ClassSymbol
-        PrimitiveSymbol
+    ClassSymbol
+    PrimitiveSymbol
     FunctionSymbol
     VariableSymbol
 
