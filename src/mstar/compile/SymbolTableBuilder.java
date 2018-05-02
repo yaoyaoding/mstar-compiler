@@ -47,6 +47,8 @@ public class SymbolTableBuilder implements IAstVisitor {
             VariableType baseType;
             if(oldArray.dimension == 1) {
                 baseType = resolveVariableType(oldArray.baseType);
+                if(oldArray.baseType instanceof PrimitiveTypeNode && ((PrimitiveTypeNode) oldArray.baseType).name.equals("void"))
+                    errorRecorder.addRecord(oldArray.location, "can not create an array with type void");
             } else {
                 ArrayTypeNode newArray = new ArrayTypeNode();
                 newArray.baseType = oldArray.baseType;
@@ -363,6 +365,8 @@ public class SymbolTableBuilder implements IAstVisitor {
             node.type = null;
             return;
         }
+        if(dimension == 0 && node.typeNode instanceof PrimitiveTypeNode && ((PrimitiveTypeNode) node.typeNode).name.equals("void"))
+            errorRecorder.addRecord(node.location, "can not new a void");
         for (int i = 0; i < dimension; i++)
             node.type = new ArrayType(node.type);
     }
