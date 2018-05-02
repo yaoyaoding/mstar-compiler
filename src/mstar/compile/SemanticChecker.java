@@ -194,7 +194,8 @@ public class SemanticChecker implements IAstVisitor {
         if(node.arguments.size() + inClass != parameterCount) {
             errorRecorder.addRecord(node.location, "the number of requried arguments is different from given arguments");
         } else {
-            for (int i = 0; i < parameterCount - inClass; i++) {
+            for (int i = 0; i < node.arguments.size(); i++) {
+                node.arguments.get(i).accept(this);
                 if(!node.arguments.get(i).type.match(node.functionSymbol.parameterTypes.get(i + inClass)))
                     errorRecorder.addRecord(node.arguments.get(i).location, "the type of this parameter is conflict with required type");
             }
