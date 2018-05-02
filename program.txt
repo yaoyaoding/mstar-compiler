@@ -1,22 +1,8 @@
-int a;
-int main() {
-    int[] a = (new int[1][])[1];
-    int a = 3;
+int f(int anything) {
     return 0;
 }
 
-
-
-/*!! metadata:
-=== comment ===
-creator test
-creator-515030910117-zhenglianmin.mx
-=== assert ===
-failure_compile
-=== phase ===
-semantic extended
-=== is_public ===
-True
-
-!!*/
-
+int main() {
+    int x = f(x);
+    return x;
+}

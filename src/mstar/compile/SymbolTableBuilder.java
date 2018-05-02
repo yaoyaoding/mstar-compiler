@@ -156,6 +156,8 @@ public class SymbolTableBuilder implements IAstVisitor {
     }
     private void defineVariable(VariableDeclaration d) {
         VariableType type = resolveVariableType(d.typeNode);
+        if(d.init != null)
+            d.init.accept(this);
         if(type != null) {
             if(currentSymbolTable.getVariableSymbol(d.name) != null) {
                 errorRecorder.addRecord(d.location, "the variable has been defined");
@@ -169,8 +171,6 @@ public class SymbolTableBuilder implements IAstVisitor {
         } else {
             errorRecorder.addRecord(d.typeNode.location, "can not resolve the type");
         }
-        if(d.init != null)
-            d.init.accept(this);
     }
     private void defineFunction(FuncDeclaration funcDeclaration, ClassSymbol classSymbol) {
         FunctionSymbol functionSymbol = currentSymbolTable.getFunctionSymbol(funcDeclaration.name);

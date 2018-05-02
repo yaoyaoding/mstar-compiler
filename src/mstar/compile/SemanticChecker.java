@@ -144,6 +144,8 @@ public class SemanticChecker implements IAstVisitor {
             returnedType = node.retExpression.type;
         if(!requiredType.match(returnedType))
             errorRecorder.addRecord(node.location, "the returned type is conflict with required type");
+        if(currentFunction.returnType.match(new PrimitiveType("void", globalSymbolTable.getPrimitiveSymbol("void"))))
+            errorRecorder.addRecord(node.location, "can not return a void value");
     }
 
     @Override
@@ -227,7 +229,6 @@ public class SemanticChecker implements IAstVisitor {
 
     private boolean isIntType(VariableType type) {
         return type instanceof PrimitiveType && ((PrimitiveType) type).name.equals("int");
-
     }
 
     private boolean isBoolType(VariableType type) {
