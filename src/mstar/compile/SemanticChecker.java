@@ -137,15 +137,16 @@ public class SemanticChecker implements IAstVisitor {
     @Override
     public void visit(ReturnStatement node) {
         VariableType requiredType = currentFunction.returnType;
+        PrimitiveType voidType = new PrimitiveType("void", globalSymbolTable.getPrimitiveSymbol("void"));
+        if(requiredType.match(voidType) && node.retExpression != null)
+            errorRecorder.addRecord(node.location, "can not return a void value");
         VariableType returnedType;
         if(node.retExpression == null)
-            returnedType = new PrimitiveType("void", globalSymbolTable.getPrimitiveSymbol("void"));
+            returnedType = voidType;
         else
             returnedType = node.retExpression.type;
         if(!requiredType.match(returnedType))
             errorRecorder.addRecord(node.location, "the returned type is conflict with required type");
-        if(currentFunction.returnType.match(new PrimitiveType("void", globalSymbolTable.getPrimitiveSymbol("void"))))
-            errorRecorder.addRecord(node.location, "can not return a void value");
     }
 
     @Override
