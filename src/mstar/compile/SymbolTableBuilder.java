@@ -100,6 +100,10 @@ public class SymbolTableBuilder implements IAstVisitor {
             errorRecorder.addRecord(classDeclaration.location, "the class has been defined");
             return;
         }
+        if(globalSymbolTable.getFunctionSymbol(classDeclaration.name) != null) {
+            errorRecorder.addRecord(classDeclaration.location, "the class name conflict with the name of a function");
+            return;
+        }
         ClassSymbol symbol = new ClassSymbol();
         symbol.name = classDeclaration.name;
         symbol.location = classDeclaration.location;
@@ -132,6 +136,10 @@ public class SymbolTableBuilder implements IAstVisitor {
     private void registerFunction(FuncDeclaration funcDeclaration, ClassSymbol classSymbol) {
         if(currentSymbolTable.getFunctionSymbol(funcDeclaration.name) != null) {
             errorRecorder.addRecord(funcDeclaration.location, "the function has been defined");
+            return;
+        }
+        if(classSymbol == null && globalSymbolTable.getClassSymbol(funcDeclaration.name) != null) {
+            errorRecorder.addRecord(funcDeclaration.location, "the function conflicts with the name of class");
             return;
         }
         FunctionSymbol symbol = new FunctionSymbol();
@@ -196,6 +204,7 @@ public class SymbolTableBuilder implements IAstVisitor {
             registerClassFunctions(d);
         for(FuncDeclaration d : node.functions)
             registerFunction(d, null);
+        if(errorRecorder.errorOccured()) return;
         for(ClassDeclaration d : node.classes)
             defineClassFields(d);
         for(Declaration d : node.declarations) {

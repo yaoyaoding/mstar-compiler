@@ -100,7 +100,7 @@ expression
     |   <assoc=right> expression bop='=' expression     #   assignExpression
     ;
 creator
-    :   atomType ('[' expression ']')* ('[' empty ']')*
+    :   atomType (('[' expression ']')* ('[' empty ']')* | ('(' ')'))
     ;
 functionCall
     :   IDENTIFIER '(' (expression (',' expression)*) ? ')'
