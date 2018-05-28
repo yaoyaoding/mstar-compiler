@@ -19,9 +19,13 @@ public class IRBuilder implements IAstVisitor {
     private Stack<BasicBlock> loopConditionBB;
     private Stack<BasicBlock> loopAfterBB;
     private Function curFunction;
+    private ClassSymbol curClassSymbol;
+    private VirtualRegister curThisPointer;
     private HashMap<String,Function> functionMap;
     private HashMap<Expression,BasicBlock> trueBBMap, falseBBMap;
     private HashMap<Expression,Operand> exprResultMap;
+    private boolean isInParameter;
+    private boolean isInClassDeclaration;
 
 
     private Function library_print;
@@ -33,9 +37,10 @@ public class IRBuilder implements IAstVisitor {
     private Function library_string_substring;
     private Function library_string_parseInt;
     private Function library_string_ord;
-    private Function external_strcmp;
-    private Function external_strcat;
+    private Function library_stringConcate;
+    private Function library_stringCompare;
     private Function external_malloc;
+    private Function library_init;
 
     public IRProgram irProgram;
 
@@ -50,16 +55,20 @@ public class IRBuilder implements IAstVisitor {
         functionMap.put("getInt", library_getInt );
         library_toString = new Function(Function.Type.Library, "toString");
         functionMap.put("toString", library_toString );
-        library_string_length = new Function(Function.Type.Library, "string.length") ;
+        library_string_length = new Function(Function.Type.Library, "string_length") ;
         functionMap.put("string.length", library_string_length );
-        library_string_substring = new Function(Function.Type.Library, "string.substring");
+        library_string_substring = new Function(Function.Type.Library, "string_substring");
         functionMap.put("string.substring", library_string_substring );
-        library_string_parseInt = new Function(Function.Type.Library, "string.parseInt");
+        library_string_parseInt = new Function(Function.Type.Library, "string_parseInt");
         functionMap.put("string.parseInt", library_string_parseInt );
-        library_string_ord = new Function(Function.Type.Library, "string.ord");
+        library_string_ord = new Function(Function.Type.Library, "string_ord");
         functionMap.put("string.ord", library_string_ord );
-        external_strcmp = new Function(Function.Type.External, "strcmp");
-        external_strcat = new Function(Function.Type.External, "strcat");
+
+        library_stringConcate = new Function(Function.Type.Library, "stringConcate");
+        library_stringCompare = new Function(Function.Type.Library, "stringCompare");
+
+        library_init = new Function(Function.Type.Library, "init");
+
         external_malloc = new Function(Function.Type.External, "malloc");
 
     }
@@ -72,6 +81,8 @@ public class IRBuilder implements IAstVisitor {
         this.trueBBMap = new HashMap<>();
         this.falseBBMap = new HashMap<>();
         this.exprResultMap = new HashMap<>();
+        this.isInParameter = false;
+        this.isInClassDeclaration = false;
         initLibraryFunctions();
     }
 
@@ -82,11 +93,29 @@ public class IRBuilder implements IAstVisitor {
         return type instanceof PrimitiveType && ((PrimitiveType) type).name.equals("bool");
     }
 
+    private void buildInitFunction(AstProgram node) {
+        irProgram.functions.add(library_init);
+        curFunction = library_init;
+        BasicBlock enterBB = new BasicBlock(curFunction, "enterBB");
+        curBB = curFunction.enterBB = enterBB;
+        for(VariableDeclaration vd : node.globalVariables) {
+            if(vd.init == null)
+                continue;
+            assign(vd.init, vd.symbol.virtualRegister.spillPlace);
+        }
+        VirtualRegister result = new VirtualRegister("");
+        curBB.append(new Call(curBB, result, functionMap.get("main")));
+        curBB.append(new Return(curBB, result));
+        curFunction.leaveBB = curBB;
+    }
+
     @Override
     public void visit(AstProgram node) {
         for(VariableDeclaration variableDeclaration : node.globalVariables) {
+            StaticData data = new StaticData(variableDeclaration.name, Config.REGISTER_WIDTH);
             VirtualRegister vr = new VirtualRegister(variableDeclaration.name);
-            vr.spillPlace = new Memory(new StaticData(variableDeclaration.name, Config.REGISTER_WIDTH));
+            vr.spillPlace = new Memory(data);
+            irProgram.staticData.add(data);
             variableDeclaration.symbol.virtualRegister = vr;
         }
         LinkedList<FuncDeclaration> funcDeclarations = new LinkedList<>();
@@ -103,8 +132,14 @@ public class IRBuilder implements IAstVisitor {
         }
         for(FuncDeclaration function : node.functions)
             function.accept(this);
-        for(ClassDeclaration classDeclaration : node.classes)
+        for(ClassDeclaration classDeclaration : node.classes) {
+            curClassSymbol = classDeclaration.symbol;
+            isInClassDeclaration = true;
             classDeclaration.accept(this);
+            isInClassDeclaration = false;
+        }
+
+        buildInitFunction(node);
     }
 
     @Override
@@ -116,6 +151,16 @@ public class IRBuilder implements IAstVisitor {
     public void visit(FuncDeclaration node) {
         curFunction = functionMap.get(node.symbol.name);
         curBB = curFunction.enterBB = new BasicBlock(curFunction, "enter");
+        isInParameter = true;
+        if(isInClassDeclaration)
+            curFunction.parameters.add(new VirtualRegister("this"));
+        for(VariableDeclaration vd : node.parameters) {
+            vd.accept(this);
+        }
+        isInParameter = false;
+        if(isInClassDeclaration) {
+            curThisPointer = curFunction.parameters.get(0);
+        }
         for(Statement statement : node.body)
             statement.accept(this);
         if(!(curBB.tail instanceof Return)) {
@@ -125,7 +170,6 @@ public class IRBuilder implements IAstVisitor {
                 curBB.append(new Return(curBB, new Immediate(0)));
             }
         }
-
 
         LinkedList<Return> returnInsts = new LinkedList<>();
         for(BasicBlock bb : curFunction.basicblocks) {
@@ -188,7 +232,9 @@ public class IRBuilder implements IAstVisitor {
         /*process the non-global variable*/
         assert curFunction != null;
         VirtualRegister vr = new VirtualRegister(node.name);
-        vr.spillPlace = new StackSlot(curFunction, node.name);
+        if(isInParameter)
+            curFunction.parameters.add(vr);
+        vr.spillPlace = new StackSlot(node.name);
         node.symbol.virtualRegister = vr;
         if(node.init != null) {
             assign(node.init, vr);
@@ -341,11 +387,21 @@ public class IRBuilder implements IAstVisitor {
 
     @Override
     public void visit(Identifier node) {
+        Operand operand;
+        if(node.name.equals("this")) {
+            operand = curThisPointer;
+        } else if(node.symbol.isClassField) {
+            String fieldName = node.name;
+            int offset = curClassSymbol.classSymbolTable.getVariableOffset(fieldName);
+            operand = new Memory(curThisPointer, new Immediate(offset));
+        } else {
+            operand = node.symbol.virtualRegister;
+        }
         if (trueBBMap.containsKey(node)) {
-            curBB.append(new CJump(curBB, node.symbol.virtualRegister, CJump.CompareOp.NE,
+            curBB.append(new CJump(curBB, operand, CJump.CompareOp.NE,
                     new Immediate(0), trueBBMap.get(node), falseBBMap.get(node)));
         } else {
-            exprResultMap.put(node, node.symbol.virtualRegister);
+            exprResultMap.put(node, operand);
         }
     }
 
@@ -363,7 +419,12 @@ public class IRBuilder implements IAstVisitor {
                 operand = new Immediate(node.value.equals("true") ? 1 : 0);
                 break;
             default:    //case "string":
-                operand = new Memory(new StaticData("static_string", node.value));
+            {
+                StaticData sd = new StaticData("static_string", node.value.substring(1, node.value.length()-1));
+                irProgram.staticData.add(sd);
+                operand = sd;
+//                operand = new Memory(sd);
+            }
         }
         exprResultMap.put(node, operand);
     }
@@ -385,12 +446,17 @@ public class IRBuilder implements IAstVisitor {
         Memory memory;
 
         if(index instanceof Immediate) {
-            memory = new Memory(base, new Immediate(((Immediate) index).value * Config.REGISTER_WIDTH));
+            memory = new Memory(base, new Immediate(((Immediate) index).value * Config.REGISTER_WIDTH + Config.REGISTER_WIDTH));
         } else if(index instanceof Register) {
-            memory = new Memory(base, (Register) index, Config.REGISTER_WIDTH);
+            memory = new Memory(base, (Register) index, Config.REGISTER_WIDTH, new Immediate(Config.REGISTER_WIDTH));
+        } else if(index instanceof Memory){
+            VirtualRegister vr = new VirtualRegister("");
+            curBB.append(new Move(curBB, vr, index));
+            curBB.append(new BinaryInst(curBB, BinaryInst.BinaryOp.ADD, vr, new Immediate(Config.REGISTER_WIDTH)));
+            memory = new Memory(vr);
         } else {
-            memory = null;
             assert false;
+            memory = null;
         }
         exprResultMap.put(node, memory);
     }
@@ -398,13 +464,25 @@ public class IRBuilder implements IAstVisitor {
     @Override
     public void visit(FuncCallExpression node) {
         VirtualRegister dest;
+        LinkedList<Operand> args = new LinkedList<>();
         if(isVoidType(node.functionSymbol.returnType)) {
             dest = null;
         } else {
             dest = new VirtualRegister("call_ret");
         }
 
-        curBB.append(new Call(curBB, dest, functionMap.get(node.functionSymbol.name)));
+        for(Expression e : node.arguments) {
+            e.accept(this);
+            Operand arg = exprResultMap.get(e);
+            if(arg instanceof Memory) {
+                VirtualRegister narg = new VirtualRegister("");
+                curBB.append(new Move(curBB, narg, arg));
+                arg = narg;
+            }
+            args.add(arg);
+        }
+
+        curBB.append(new Call(curBB, dest, functionMap.get(node.functionSymbol.name), args));
         exprResultMap.put(node, dest);
     }
 
@@ -417,8 +495,15 @@ public class IRBuilder implements IAstVisitor {
                 curBB.append(new Call(curBB, retAddr, external_malloc, new Immediate(baseBytes)));
                 if(constructor != null)
                     curBB.append(new Call(curBB, null, constructor, retAddr));
-                else
-                    curBB.append(new Move(curBB, new Memory(retAddr), new Immediate(0)));
+                else {
+                    if(baseBytes == Config.REGISTER_WIDTH) {
+                        curBB.append(new Move(curBB, new Memory(retAddr), new Immediate(0)));
+                    } else if(baseBytes == Config.REGISTER_WIDTH * 2) {  //  maybe string
+                        curBB.append(new BinaryInst(curBB, BinaryInst.BinaryOp.ADD, retAddr, new Immediate(Config.REGISTER_WIDTH)));
+                        curBB.append(new Move(curBB, new Memory(retAddr), new Immediate(0)));
+                        curBB.append(new BinaryInst(curBB, BinaryInst.BinaryOp.SUB, retAddr, new Immediate(Config.REGISTER_WIDTH)));
+                    }
+                }
                 return retAddr;
             }
         } else {
@@ -445,6 +530,7 @@ public class IRBuilder implements IAstVisitor {
                 Operand pointer = allocateArray(remainDims, baseBytes, constructor);
                 curBB.append(new Move(curBB, new Memory(addr, size, Config.REGISTER_WIDTH), pointer));
             }
+            curBB.append(new UnaryInst(curBB, UnaryInst.UnaryOp.DEC, size));
             curBB.append(new Jump(curBB, condBB));
             curBB = afterBB;
             return addr;
@@ -477,13 +563,13 @@ public class IRBuilder implements IAstVisitor {
             expr.accept(this);
             dims.add(exprResultMap.get(expr));
         }
-        if(node.restDemension > 0) {
+        if(node.restDemension > 0 || node.typeNode instanceof PrimitiveTypeNode ) {
             Operand pointer = allocateArray(dims, 0, null);
             exprResultMap.put(node, pointer);
         } else {
             int bytes;
             if(node.type instanceof ClassType && ((ClassType) node.type).name.equals("string"))
-                bytes = Config.REGISTER_WIDTH;
+                bytes = Config.REGISTER_WIDTH * 2;
             else
                 bytes = node.type.getBytes();
             Operand pointer = allocateArray(dims, bytes, constructor);
@@ -511,7 +597,13 @@ public class IRBuilder implements IAstVisitor {
                 arguments.add(baseAddr);
                 for(Expression expression : node.methodCall.arguments) {
                     expression.accept(this);
-                    arguments.add(exprResultMap.get(expression));
+                    Operand arg = exprResultMap.get(expression);
+                    if(arg instanceof Memory) {
+                        VirtualRegister narg = new VirtualRegister("");
+                        curBB.append(new Move(curBB, narg, arg));
+                        arg = narg;
+                    }
+                    arguments.add(arg);
                 }
                 VirtualRegister retValue = isVoidType(node.methodCall.functionSymbol.returnType) ? null : new VirtualRegister("");
                 curBB.append(new Call(curBB, retValue, function, arguments));
@@ -554,7 +646,7 @@ public class IRBuilder implements IAstVisitor {
             case "-": case "~":{
                 VirtualRegister vr = new VirtualRegister("");
                 curBB.append(new Move(curBB, vr, operand));
-                curBB.append(new UnaryInst(curBB, node.op.equals("-") ? UnaryInst.UnaryOp.NEG : UnaryInst.UnaryOp.NOT, (Address) operand));
+                curBB.append(new UnaryInst(curBB, node.op.equals("-") ? UnaryInst.UnaryOp.NEG : UnaryInst.UnaryOp.NOT, vr));
                 exprResultMap.put(node, vr);
             }
             break;
@@ -570,13 +662,7 @@ public class IRBuilder implements IAstVisitor {
         Operand orhs = exprResultMap.get(rhs);
         VirtualRegister result = new VirtualRegister("");
         if(op.equals("+") && lhs.type instanceof ClassType) {
-            VirtualRegister newSize = new VirtualRegister("");
-            curBB.append(new Move(curBB, newSize, olhs));
-            curBB.append(new BinaryInst(curBB, BinaryInst.BinaryOp.ADD, newSize, orhs));
-            curBB.append(new BinaryInst(curBB, BinaryInst.BinaryOp.ADD, newSize, new Immediate(Config.REGISTER_WIDTH)));
-            curBB.append(new Call(curBB, result, external_malloc, newSize));
-            curBB.append(new BinaryInst(curBB, BinaryInst.BinaryOp.SUB, newSize, new Immediate(Config.REGISTER_WIDTH)));
-            curBB.append(new Move(curBB, new Memory(result), newSize));
+            curBB.append(new Call(curBB, result, library_stringConcate, olhs, orhs));
             return result;
         }
 
@@ -597,7 +683,7 @@ public class IRBuilder implements IAstVisitor {
         curBB.append(new BinaryInst(curBB, bop, result, orhs));
         return result;
     }
-    private void doComparisionBinary(String op, Expression lhs, Expression rhs, BasicBlock trueBB, BasicBlock falseBB) {
+    private void doLogicalBinary(String op, Expression lhs, Expression rhs, BasicBlock trueBB, BasicBlock falseBB) {
         BasicBlock checkSecondBB = new BasicBlock(curFunction, "secondConditionBB");
         if(op.equals("&&")) {
             falseBBMap.put(lhs, falseBB);
@@ -628,7 +714,7 @@ public class IRBuilder implements IAstVisitor {
         }
         if(lhs.type instanceof ClassType) { //  str (<|<=|>|>=|==|!=) str
             VirtualRegister scr = new VirtualRegister("");
-            curBB.append(new Call(curBB, scr, external_strcmp, olhs, orhs));
+            curBB.append(new Call(curBB, scr, library_stringCompare, olhs, orhs));
             curBB.append(new CJump(curBB, scr, cop, new Immediate(0), trueBB, falseBB));
         } else {
             if(olhs instanceof Memory && orhs instanceof Memory) {
@@ -648,10 +734,10 @@ public class IRBuilder implements IAstVisitor {
                 exprResultMap.put(node, doArithmeticBinary(node.op, node.lhs, node.rhs));
                 break;
             case "<": case ">": case "==": case ">=": case "<=":
-                doComparisionBinary(node.op, node.lhs, node.rhs, trueBBMap.get(node), falseBBMap.get(node));
+                doRelationBinary(node.op, node.lhs, node.rhs, trueBBMap.get(node), falseBBMap.get(node));
                 break;
             case "&&": case "||":
-                doRelationBinary(node.op, node.lhs, node.rhs, trueBBMap.get(node), falseBBMap.get(node));
+                doLogicalBinary(node.op, node.lhs, node.rhs, trueBBMap.get(node), falseBBMap.get(node));
                 break;
             default:
                 assert false;

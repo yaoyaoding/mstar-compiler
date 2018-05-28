@@ -2,10 +2,9 @@ package Mstar.IR.Instruction;
 
 import Mstar.IR.BasicBlock;
 import Mstar.IR.IIRVisitor;
-import Mstar.IR.Operand.Operand;
-import Mstar.IR.Operand.Register;
+import Mstar.IR.Operand.*;
 
-import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedList;
 
 public abstract class IRInstruction {
@@ -20,18 +19,28 @@ public abstract class IRInstruction {
         this.bb = bb;
     }
     public void prepend(IRInstruction inst) {
-        if(prev != null)
+        if(prev == null) {
+            inst.next = this;
+            this.prev = inst;
+            bb.head = inst;
+        } else {
             prev.next = inst;
-        inst.prev = prev;
-        inst.next = this;
-        this.prev = inst;
+            inst.prev = prev;
+            inst.next = this;
+            this.prev = inst;
+        }
     }
     public void append(IRInstruction inst) {
-        if(next != null)
-            next.prev = inst;
-        inst.next = next;
-        inst.prev = this;
-        this.next = inst;
+        if(next == null) {
+            this.next = inst;
+            inst.prev = this;
+            bb.tail = inst;
+        } else {
+            inst.next = this.next;
+            this.next.prev = inst;
+            this.next = inst;
+            inst.prev = this;
+        }
     }
     public void remove() {
         if(prev == null && next == null) {
@@ -47,13 +56,19 @@ public abstract class IRInstruction {
             next.prev = prev;
         }
     }
-    abstract Collection<Register> getUseRegs();
-    abstract Collection<Register> getDefRegs();
-    static Collection<Register> getRegs(Operand operand) {
-        LinkedList<Register> regs = new LinkedList<>();
-        if(operand instanceof Register)
-            regs.add((Register) operand);
-        return regs;
+    public abstract void renameUseReg(HashMap<Register, Register> renameMap);
+    public abstract void renameDefReg(HashMap<Register, Register> renameMap);
+    public abstract LinkedList<Register> getDefRegs();
+    public abstract LinkedList<Register> getUseRegs();
+    public abstract LinkedList<StackSlot> getStackSlots();
+
+    LinkedList<StackSlot> defaultGetStackSlots(Operand... operands) {
+        LinkedList<StackSlot> slots = new LinkedList<>();
+        for(Operand operand : operands)
+            if(operand instanceof StackSlot)
+                slots.add((StackSlot) operand);
+        return slots;
     }
+
     public abstract void accept(IIRVisitor visitor);
 }

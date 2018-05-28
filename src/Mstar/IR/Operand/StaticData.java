@@ -1,5 +1,6 @@
 package Mstar.IR.Operand;
 
+import Mstar.Config;
 import Mstar.IR.IIRVisitor;
 
 public class StaticData extends Constant {
@@ -14,7 +15,7 @@ public class StaticData extends Constant {
     }
     public StaticData(String hint, String init) {
         this.hint = hint;
-        this.bytes = init.length() + 1;
+        this.bytes = init.length() + 1 + Config.REGISTER_WIDTH;
         this.init = init;
     }
 

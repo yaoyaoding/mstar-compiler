@@ -7,8 +7,7 @@ public class StackSlot extends Memory {
     public Function function;
     public String hint;
 
-    public StackSlot(Function function, String hint) {
-        this.function = function;
+    public StackSlot(String hint) {
         this.hint = hint;
     }
     public void accept(IIRVisitor visitor) {

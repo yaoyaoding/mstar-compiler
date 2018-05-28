@@ -3,11 +3,11 @@ package Mstar.Worker;
 import Mstar.AST.AstProgram;
 import Mstar.Config;
 import Mstar.IR.IRProgram;
+import Mstar.IR.X86RegisterSet;
 import Mstar.Parser.MstarLexer;
 import Mstar.Parser.MstarParser;
 import Mstar.Symbol.GlobalSymbolTable;
-import Mstar.Worker.BackEnd.IRBuilder;
-import Mstar.Worker.BackEnd.IRPrinter;
+import Mstar.Worker.BackEnd.*;
 import Mstar.Worker.FrontEnd.*;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.ParseTree;
@@ -15,6 +15,7 @@ import org.antlr.v4.runtime.tree.ParseTree;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintStream;
 
 
 import static java.lang.System.exit;
@@ -55,7 +56,9 @@ public class MstarCompiler {
 
         AstProgram astProgram = astBuilder.getAstProgram();
 
-        if(Config.printIR) {
+        if(Config.printAST) {
+            System.err.println("====================");
+            System.err.println("Abstract Syntax Tree");
             AstPrinter astPrinter = new AstPrinter();
             astPrinter.printTo(System.err);
         }
@@ -80,14 +83,46 @@ public class MstarCompiler {
             exit(1);
         }
 
-        //  AST with Symbol information -> IR
+        //  AST with Symbol information -> IR with VirtualRegister
         IRBuilder irBuilder = new IRBuilder(globalSymbolTable);
         astProgram.accept(irBuilder);
         IRProgram irProgram = irBuilder.irProgram;
 
-        if(Config.printIR) {
+        if(Config.printIRBeforeAllocator) {
+            System.err.println("=====================================================");
+            System.err.println("Intermediate Representation Before Register Allocator");
             IRPrinter irPrinter = new IRPrinter(irProgram);
+            irPrinter.showNasm = false;
+            irPrinter.visit(irProgram);
             irPrinter.printTo(System.err);
+        }
+
+        //  IR with VirtualRegister -> IR with PhysicalRegister
+        X86RegisterSet.init();
+        NaiveAllocator naiveAllocator = new NaiveAllocator(irProgram, X86RegisterSet.regs);
+        naiveAllocator.run();
+
+        if(Config.printIRAfterAllocator) {
+            System.err.println("====================================================");
+            System.err.println("Intermediate Representation After Register Allocator");
+            IRPrinter irPrinter = new IRPrinter(irProgram);
+            irPrinter.showNasm = false;
+            irPrinter.visit(irProgram);
+            irPrinter.printTo(System.err);
+        }
+
+        //  IR with PhysicalRegister -> IR with PhysicalRegister and StackFrame
+        StackFrameBuilder stackFrameBuilder = new StackFrameBuilder(irProgram);
+        stackFrameBuilder.run();
+
+        if(Config.printIRWithFrame) {
+            System.err.println("===========================================");
+            System.err.println("Intermediate Representation With StackFrame");
+            IRPrinter irPrinter = new IRPrinter(irProgram);
+            irPrinter.showNasm = true;
+            irPrinter.visit(irProgram);
+            irPrinter.printTo(new PrintStream("program.asm"));
+//            irPrinter.printTo(System.err);
         }
 
         exit(0);

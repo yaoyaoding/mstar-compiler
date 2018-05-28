@@ -5,10 +5,10 @@ import Mstar.IR.IIRVisitor;
 public class VirtualRegister extends Register {
     public String hint;
     public Memory spillPlace;
-    public PhysicalRegister physicalRegister;
 
     public VirtualRegister(String hint) {
         this.hint = hint;
+        this.spillPlace = new StackSlot(hint + "slot");
     }
 
     @Override

@@ -1,5 +1,6 @@
 package Mstar.IR;
 
+import Mstar.IR.Operand.StackSlot;
 import Mstar.IR.Operand.VirtualRegister;
 import Mstar.Symbol.FunctionSymbol;
 
@@ -18,6 +19,8 @@ public class Function {
     public LinkedList<VirtualRegister> parameters;
 
     public Function(Type type, String name) {
+        this.type = type;
+        this.name = name;
         this.callee = new LinkedList<>();
         this.basicblocks = new LinkedList<>();
         this.parameters = new LinkedList<>();

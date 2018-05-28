@@ -2,6 +2,9 @@ package Mstar.IR.Operand;
 
 import Mstar.IR.IIRVisitor;
 
+import java.util.HashMap;
+import java.util.LinkedList;
+
 public class Memory extends Address {
     public Register base = null;
     public Register index = null;
@@ -34,6 +37,19 @@ public class Memory extends Address {
         this.index = index;
         this.scale = scale;
         this.constant = constant;
+    }
+
+    public LinkedList<Register> getUseRegs() {
+        LinkedList<Register> regs = new LinkedList<>();
+        if(base != null) regs.add(base);
+        if(index != null) regs.add(index);
+        return regs;
+    }
+    public void renameUseReg(HashMap<Register, Register> renameMap) {
+        if(renameMap.containsKey(base))
+            base = renameMap.get(base);
+        if(renameMap.containsKey(index))
+            index = renameMap.get(index);
     }
 
     @Override

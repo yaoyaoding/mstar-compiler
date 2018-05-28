@@ -4,6 +4,9 @@ import Mstar.AST.*;
 import Mstar.Symbol.*;
 import Mstar.Worker.ErrorRecorder;
 
+import java.util.Arrays;
+import java.util.HashMap;
+
 /*
 
     build the Symbol table, and check use before declaration error
@@ -14,11 +17,13 @@ public class SymbolTableBuilder implements IAstVisitor {
     public GlobalSymbolTable globalSymbolTable;
     public SymbolTable currentSymbolTable;
     private String name;
+    public HashMap<SymbolTable,ClassSymbol> symbolTableToClassSymbol;
 
     public SymbolTableBuilder(ErrorRecorder errorRecorder) {
         this.errorRecorder = errorRecorder;
         this.globalSymbolTable = new GlobalSymbolTable();
         this.currentSymbolTable = globalSymbolTable;
+        this.symbolTableToClassSymbol = new HashMap<>();
     }
     private void enter(SymbolTable symbolTable) {
         currentSymbolTable = symbolTable;
@@ -106,6 +111,8 @@ public class SymbolTableBuilder implements IAstVisitor {
         symbol.name = classDeclaration.name;
         symbol.location = classDeclaration.location;
         symbol.classSymbolTable = new SymbolTable(globalSymbolTable);
+        classDeclaration.symbol = symbol;
+        symbolTableToClassSymbol.put(symbol.classSymbolTable, symbol);
         globalSymbolTable.putClassSymbol(symbol.name, symbol);
     }
     private void registerClassFunctions(ClassDeclaration classDeclaration) {
@@ -162,7 +169,7 @@ public class SymbolTableBuilder implements IAstVisitor {
             symbol.parameterTypes.add(type);
         }
         funcDeclaration.symbol = symbol;
-        currentSymbolTable.putFunctionSymbol(symbol.name, symbol);
+        currentSymbolTable.putFunctionSymbol(funcDeclaration.name, symbol);
     }
     private void defineVariable(VariableDeclaration d) {
         VariableType type = resolveVariableType(d.typeNode);
@@ -175,7 +182,8 @@ public class SymbolTableBuilder implements IAstVisitor {
                 if(type instanceof PrimitiveType && ((PrimitiveType) type).name.equals("void")
                         || type instanceof ClassType && ((ClassType) type).name.equals("null"))
                     errorRecorder.addRecord(d.location, "can not define a class with type null or void");
-                d.symbol = new VariableSymbol(d.name, type, d.location);
+                boolean isClassField = symbolTableToClassSymbol.containsKey(currentSymbolTable);
+                d.symbol = new VariableSymbol(d.name, type, d.location, isClassField);
                 currentSymbolTable.putVariableSymbol(d.name, d.symbol);
             }
         } else {
@@ -410,11 +418,15 @@ public class SymbolTableBuilder implements IAstVisitor {
                 node.type = node.fieldAccess.type;
             } else {
                 node.methodCall.functionSymbol = resolveFunctionSymbol(node.methodCall.functionName, classType.symbol.classSymbolTable);
-                if (node.methodCall.functionSymbol == null) {
-                    errorRecorder.addRecord(node.methodCall.location,
-                            "class '" + classType.name + "' has not method '" + node.fieldAccess.name + "'");
-                    node.type = null;
-                    return;
+                try {
+                    if (node.methodCall.functionSymbol == null) {
+                        errorRecorder.addRecord(node.methodCall.location,
+                                "class '" + classType.name + "' has not method '" + node.methodCall.functionName + "'");
+                        node.type = null;
+                        return;
+                    }
+                } catch (Exception e) {
+                    System.err.println(Arrays.toString(e.getStackTrace()));
                 }
                 node.methodCall.type = node.methodCall.functionSymbol.returnType;
                 node.type = node.methodCall.type;

@@ -40,7 +40,7 @@ public class GlobalSymbolTable extends SymbolTable {
     }
     private FunctionSymbol stringLength() {
         FunctionSymbol f = new FunctionSymbol();
-        f.name = "String.length";
+        f.name = "string.length";
         f.location = new TokenLocation(0, 0);
         f.parameterTypes.add(stringType());
         f.parameterNames.add("this");
