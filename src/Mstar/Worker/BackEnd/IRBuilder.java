@@ -199,7 +199,8 @@ public class IRBuilder implements IAstVisitor {
 
     @Override
     public void visit(ClassDeclaration node) {
-        node.constructor.accept(this);
+        if(node.constructor != null)
+            node.constructor.accept(this);
         for(FuncDeclaration func : node.methods)
             func.accept(this);
     }
@@ -355,6 +356,7 @@ public class IRBuilder implements IAstVisitor {
             if(isBoolType(node.retExpression.type)) {
                 VirtualRegister vr = new VirtualRegister("single_ret");
                 boolAssign(node.retExpression, vr);
+                curBB.append(new Return(curBB, vr));
             } else {
                 node.retExpression.accept(this);
                 curBB.append(new Return(curBB, exprResultMap.get(node.retExpression)));
@@ -453,7 +455,7 @@ public class IRBuilder implements IAstVisitor {
             VirtualRegister vr = new VirtualRegister("");
             curBB.append(new Move(curBB, vr, index));
             curBB.append(new BinaryInst(curBB, BinaryInst.BinaryOp.ADD, vr, new Immediate(Config.REGISTER_WIDTH)));
-            memory = new Memory(vr);
+            memory = new Memory(base, vr, 1);
         } else {
             assert false;
             memory = null;
@@ -483,7 +485,11 @@ public class IRBuilder implements IAstVisitor {
         }
 
         curBB.append(new Call(curBB, dest, functionMap.get(node.functionSymbol.name), args));
-        exprResultMap.put(node, dest);
+        if(trueBBMap.containsKey(node)) {
+            curBB.append(new CJump(curBB, dest, CJump.CompareOp.NE, new Immediate(0), trueBBMap.get(node), falseBBMap.get(node)));
+        } else {
+            exprResultMap.put(node, dest);
+        }
     }
 
     private Operand allocateArray(LinkedList<Operand> dims, int baseBytes, Function constructor) {
@@ -662,6 +668,17 @@ public class IRBuilder implements IAstVisitor {
         Operand orhs = exprResultMap.get(rhs);
         VirtualRegister result = new VirtualRegister("");
         if(op.equals("+") && lhs.type instanceof ClassType) {
+            VirtualRegister vr;
+            if(olhs instanceof Memory && !(olhs instanceof StackSlot)) {
+                vr = new VirtualRegister("");
+                curBB.append(new Move(curBB, vr, olhs));
+                olhs = vr;
+            }
+            if(orhs instanceof Memory && !(orhs instanceof StackSlot)) {
+                vr = new VirtualRegister("");
+                curBB.append(new Move(curBB, vr, orhs));
+                orhs = vr;
+            }
             curBB.append(new Call(curBB, result, library_stringConcate, olhs, orhs));
             return result;
         }
@@ -680,6 +697,14 @@ public class IRBuilder implements IAstVisitor {
             case "^": bop = BinaryInst.BinaryOp.XOR; break;
         }
         curBB.append(new Move(curBB, result, olhs));
+        if((op.equals("*") || op.equals("/") || op.equals("%")) && orhs instanceof Constant) {
+            /*
+                TODO: to implement a optimization here
+             */
+            VirtualRegister vr = new VirtualRegister("");
+            curBB.append(new Move(curBB, vr, orhs));
+            orhs = vr;
+        }
         curBB.append(new BinaryInst(curBB, bop, result, orhs));
         return result;
     }
@@ -696,6 +721,7 @@ public class IRBuilder implements IAstVisitor {
         curBB = checkSecondBB;
         trueBBMap.put(rhs, trueBB);
         falseBBMap.put(rhs, falseBB);
+        rhs.accept(this);
     }
     private void doRelationBinary(String op, Expression lhs, Expression rhs, BasicBlock trueBB, BasicBlock falseBB) {
         lhs.accept(this);
@@ -733,7 +759,7 @@ public class IRBuilder implements IAstVisitor {
             case ">>": case "<<": case "&": case "|": case "^":
                 exprResultMap.put(node, doArithmeticBinary(node.op, node.lhs, node.rhs));
                 break;
-            case "<": case ">": case "==": case ">=": case "<=":
+            case "<": case ">": case "==": case ">=": case "<=": case "!=":
                 doRelationBinary(node.op, node.lhs, node.rhs, trueBBMap.get(node), falseBBMap.get(node));
                 break;
             case "&&": case "||":

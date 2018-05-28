@@ -50,9 +50,11 @@ public class SemanticChecker implements IAstVisitor {
     public void visit(ClassDeclaration node) {
         for(FuncDeclaration d : node.methods)
             d.accept(this);
-        node.constructor.accept(this);
-        if(!node.constructor.name.equals(node.name)) {
-            errorRecorder.addRecord(node.constructor.location, "constructor must have the same name with class");
+        if(node.constructor != null) {
+            node.constructor.accept(this);
+            if (!node.constructor.name.equals(node.name)) {
+                errorRecorder.addRecord(node.constructor.location, "constructor must have the same name with class");
+            }
         }
     }
 
@@ -270,6 +272,11 @@ public class SemanticChecker implements IAstVisitor {
                 node.modifiable = false;
                 break;
             case "~":
+                if(!isInt)
+                    typeError = true;
+                node.modifiable = false;
+                break;
+            case "-":
                 if(!isInt)
                     typeError = true;
                 node.modifiable = false;

@@ -341,6 +341,7 @@ public class SymbolTableBuilder implements IAstVisitor {
                 break;
             case "string":
                 node.type = new ClassType("string", globalSymbolTable.getClassSymbol("string"));
+                break;
             default:
                 assert false;
         }

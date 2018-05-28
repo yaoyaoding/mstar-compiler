@@ -20,6 +20,15 @@ public class Call extends IRInstruction {
         if(!caller.callee.contains(func))
             caller.callee.add(func);
     }
+    private void checkArgs() {
+        for(Operand operand : args) {
+            if(operand instanceof Register || operand instanceof StackSlot || operand instanceof Constant) {
+
+            } else {
+                System.out.println("a");
+            }
+        }
+    }
     public Call(BasicBlock bb, Address dest, Function func, LinkedList<Operand> args) {
         super(bb);
         this.dest = dest;
@@ -27,6 +36,7 @@ public class Call extends IRInstruction {
         this.args = new LinkedList<>();
         this.args.addAll(args);
         addCalleeFunction();
+        checkArgs();
     }
     public Call(BasicBlock bb, Address dest, Function func, Operand... args) {
         super(bb);
@@ -35,6 +45,7 @@ public class Call extends IRInstruction {
         this.args = new LinkedList<>();
         this.args.addAll(Arrays.asList(args));
         addCalleeFunction();
+        checkArgs();
     }
 
     @Override
