@@ -6,5 +6,5 @@
 set -e
 cd "$(dirname "$0")"
 export CCHK="java -classpath ./lib/antlr-4.7.1-complete.jar:./bin Mstar.Worker.MstarCompiler"
-cat > astProgram.txt   # save everything in stdin to astProgram.txt
+cat > program.cpp   # save everything in stdin to astProgram.txt
 $CCHK

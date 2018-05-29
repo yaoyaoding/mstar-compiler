@@ -22,11 +22,7 @@ public class Call extends IRInstruction {
     }
     private void checkArgs() {
         for(Operand operand : args) {
-            if(operand instanceof Register || operand instanceof StackSlot || operand instanceof Constant) {
-
-            } else {
-                System.out.println("a");
-            }
+            assert (operand instanceof Register || operand instanceof StackSlot || operand instanceof Constant);
         }
     }
     public Call(BasicBlock bb, Address dest, Function func, LinkedList<Operand> args) {
@@ -69,8 +65,10 @@ public class Call extends IRInstruction {
 
     @Override
     public void renameUseReg(HashMap<Register, Register> renameMap) {
-        if(dest instanceof Memory)
+        if(dest instanceof Memory) {
+            dest = ((Memory) dest).copy();
             ((Memory) dest).renameUseReg(renameMap);
+        }
     }
 
     @Override

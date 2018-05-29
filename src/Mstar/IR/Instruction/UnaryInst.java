@@ -42,8 +42,10 @@ public class UnaryInst extends IRInstruction {
     public void renameUseReg(HashMap<Register, Register> renameMap) {
         if(dest instanceof Register && renameMap.containsKey(dest))
             dest = renameMap.get(dest);
-        else if(dest instanceof Memory)
+        else if(dest instanceof Memory) {
+            dest = ((Memory) dest).copy();
             ((Memory) dest).renameUseReg(renameMap);
+        }
     }
 
     @Override

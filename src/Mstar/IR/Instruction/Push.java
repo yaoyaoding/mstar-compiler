@@ -33,8 +33,10 @@ public class Push extends IRInstruction {
 
     @Override
     public void renameUseReg(HashMap<Register, Register> renameMap) {
-        if(src instanceof Memory)
+        if(src instanceof Memory) {
+            src = ((Memory) src).copy();
             ((Memory) src).renameUseReg(renameMap);
+        }
     }
 
     @Override

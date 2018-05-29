@@ -417,9 +417,10 @@ public class IRBuilder implements IAstVisitor {
             case "null":
                 operand = new Immediate(0);
                 break;
-            case "bool":
-                operand = new Immediate(node.value.equals("true") ? 1 : 0);
-                break;
+            case "bool": {
+                curBB.append(new Jump(curBB, node.value.equals("true") ? trueBBMap.get(node) : falseBBMap.get(node)));
+                return;
+            }
             default:    //case "string":
             {
                 StaticData sd = new StaticData("static_string", node.value.substring(1, node.value.length()-1));
@@ -460,7 +461,10 @@ public class IRBuilder implements IAstVisitor {
             assert false;
             memory = null;
         }
-        exprResultMap.put(node, memory);
+        if(trueBBMap.containsKey(node))
+            curBB.append(new CJump(curBB, memory, CJump.CompareOp.NE, new Immediate(0), trueBBMap.get(node), falseBBMap.get(node)));
+        else
+            exprResultMap.put(node, memory);
     }
 
     @Override
@@ -593,10 +597,11 @@ public class IRBuilder implements IAstVisitor {
             exprResultMap.put(node, new Memory(baseAddr));
         } else if(node.object.type instanceof ClassType) {
             ClassType classType = (ClassType) node.object.type;
+            Operand operand;
             if(node.fieldAccess != null) {
                 String fieldName = node.fieldAccess.name;
                 int offset = classType.symbol.classSymbolTable.getVariableOffset(fieldName);
-                exprResultMap.put(node, new Memory(baseAddr, new Immediate(offset)));
+                operand = new Memory(baseAddr, new Immediate(offset));
             } else {
                 Function function = functionMap.get(node.methodCall.functionSymbol.name);
                 LinkedList<Operand> arguments = new LinkedList<>();
@@ -613,7 +618,12 @@ public class IRBuilder implements IAstVisitor {
                 }
                 VirtualRegister retValue = isVoidType(node.methodCall.functionSymbol.returnType) ? null : new VirtualRegister("");
                 curBB.append(new Call(curBB, retValue, function, arguments));
-                exprResultMap.put(node, retValue);
+                operand = retValue;
+            }
+            if(trueBBMap.containsKey(node)) {
+                curBB.append(new CJump(curBB, operand, CJump.CompareOp.NE, new Immediate(0), trueBBMap.get(node), falseBBMap.get(node)));
+            } else {
+                exprResultMap.put(node, operand);
             }
         } else {
             assert false;
@@ -622,12 +632,13 @@ public class IRBuilder implements IAstVisitor {
 
     @Override
     public void visit(UnaryExpression node) {
-        node.expression.accept(this);
         if(node.op.equals("!")) {
-            trueBBMap.put(node, falseBBMap.get(node.expression));
-            falseBBMap.put(node, trueBBMap.get(node.expression));
+            trueBBMap.put(node.expression, falseBBMap.get(node));
+            falseBBMap.put(node.expression, trueBBMap.get(node));
+            node.expression.accept(this);
             return;
         }
+        node.expression.accept(this);
 
         Operand operand = exprResultMap.get(node.expression);
         switch(node.op) {
@@ -697,7 +708,7 @@ public class IRBuilder implements IAstVisitor {
             case "^": bop = BinaryInst.BinaryOp.XOR; break;
         }
         curBB.append(new Move(curBB, result, olhs));
-        if((op.equals("*") || op.equals("/") || op.equals("%")) && orhs instanceof Constant) {
+        if((op.equals("*") || op.equals("/") || op.equals("%")) && !(orhs instanceof Register)) {
             /*
                 TODO: to implement a optimization here
              */

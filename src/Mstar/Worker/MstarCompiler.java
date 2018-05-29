@@ -23,7 +23,7 @@ import static java.lang.System.exit;
 
 public class MstarCompiler {
     public static void main(String[] args) throws IOException {
-        InputStream is = new FileInputStream("program.txt");
+        InputStream is = new FileInputStream("program.cpp");
         ANTLRInputStream ais = new ANTLRInputStream(is);
         MstarLexer mstarLexer = new MstarLexer(ais);
         CommonTokenStream tokens = new CommonTokenStream(mstarLexer);
@@ -88,10 +88,15 @@ public class MstarCompiler {
         astProgram.accept(irBuilder);
         IRProgram irProgram = irBuilder.irProgram;
 
+        //  correct some invalid use of instruction
+        IRCorrector irCorrector = new IRCorrector();
+        irProgram.accept(irCorrector);
+
         if(Config.printIRBeforeAllocator) {
             System.err.println("=====================================================");
             System.err.println("Intermediate Representation Before Register Allocator");
             IRPrinter irPrinter = new IRPrinter(irProgram);
+            irPrinter.showBlockHint = true;
             irPrinter.showNasm = false;
             irPrinter.visit(irProgram);
             irPrinter.printTo(System.err);

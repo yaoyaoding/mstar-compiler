@@ -39,6 +39,10 @@ public class Memory extends Address {
         this.constant = constant;
     }
 
+    public Memory copy() {
+        return new Memory(base, index, scale, constant);
+    }
+
     public LinkedList<Register> getUseRegs() {
         LinkedList<Register> regs = new LinkedList<>();
         if(base != null) regs.add(base);

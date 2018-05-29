@@ -40,6 +40,7 @@ public class Lea extends IRInstruction {
     }
     @Override
     public void renameUseReg(HashMap<Register, Register> renameMap) {
+        src = src.copy();
         src.renameUseReg(renameMap);
     }
 

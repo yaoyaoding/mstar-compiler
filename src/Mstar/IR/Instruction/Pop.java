@@ -33,8 +33,10 @@ public class Pop extends IRInstruction {
 
     @Override
     public void renameUseReg(HashMap<Register, Register> renameMap) {
-        if(dest instanceof Memory)
+        if(dest instanceof Memory) {
+            dest = ((Memory) dest).copy();
             ((Memory) dest).renameUseReg(renameMap);
+        }
     }
 
     @Override

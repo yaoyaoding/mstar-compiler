@@ -37,8 +37,10 @@ public class Return extends IRInstruction {
     public void renameUseReg(HashMap<Register, Register> renameMap) {
         if(src instanceof Register && renameMap.containsKey(src))
             src = renameMap.get(src);
-        else if(src instanceof Memory)
+        else if(src instanceof Memory) {
+            src = ((Memory) src).copy();
             ((Memory) src).renameUseReg(renameMap);
+        }
     }
 
     @Override

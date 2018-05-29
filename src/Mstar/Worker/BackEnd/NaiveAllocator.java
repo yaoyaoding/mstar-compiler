@@ -6,10 +6,7 @@ import Mstar.IR.IRProgram;
 import Mstar.IR.Instruction.Call;
 import Mstar.IR.Instruction.IRInstruction;
 import Mstar.IR.Instruction.Move;
-import Mstar.IR.Operand.Operand;
-import Mstar.IR.Operand.PhysicalRegister;
-import Mstar.IR.Operand.Register;
-import Mstar.IR.Operand.VirtualRegister;
+import Mstar.IR.Operand.*;
 
 import java.util.*;
 
@@ -38,6 +35,8 @@ public class NaiveAllocator {
                         Operand operand = args.get(i);
                         if(operand instanceof VirtualRegister) {
                             args.set(i, ((VirtualRegister) operand).spillPlace);
+                        } else {
+                            assert operand instanceof Constant;
                         }
                     }
                 }
@@ -50,15 +49,22 @@ public class NaiveAllocator {
 
                 int cnt = 0;
                 for (Register reg : allRegs) {
-                    assert reg instanceof VirtualRegister;
+                    try {
+                        assert reg instanceof VirtualRegister;
+                    }catch (Error e) {
+                        e.getStackTrace();
+                        System.err.println(function.name);
+                        System.err.println(bb.hint);
+                    }
                     if (!renameMap.containsKey(reg))
                         renameMap.put(reg, physicalRegisters.get(cnt++));
                 }
                 inst.renameUseReg(renameMap);
                 inst.renameDefReg(renameMap);
 
-                for (Register reg : usedRegs)
+                for (Register reg : usedRegs) {
                     inst.prepend(new Move(bb, renameMap.get(reg), ((VirtualRegister) reg).spillPlace));
+                }
                 for (Register reg : definedRegs) {
                     inst.append(new Move(bb, ((VirtualRegister) reg).spillPlace, renameMap.get(reg)));
                     inst = inst.next;

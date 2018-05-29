@@ -15,9 +15,6 @@ public class Move extends IRInstruction {
         super(bb);
         this.dest = dest;
         this.src = src;
-        if(dest == null || src == null) {
-            System.out.println("hh");
-        }
     }
 
     @Override
@@ -41,10 +38,14 @@ public class Move extends IRInstruction {
     public void renameUseReg(HashMap<Register, Register> renameMap) {
         if(src instanceof Register && renameMap.containsKey(src))
             src = renameMap.get(src);
-        else if(src instanceof Memory)
+        else if(src instanceof Memory) {
+            src = ((Memory) src).copy();
             ((Memory) src).renameUseReg(renameMap);
-        if(dest instanceof Memory)
+        }
+        if(dest instanceof Memory) {
+            dest = ((Memory) dest).copy();
             ((Memory) dest).renameUseReg(renameMap);
+        }
     }
 
     @Override

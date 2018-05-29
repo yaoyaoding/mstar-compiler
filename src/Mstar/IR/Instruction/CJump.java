@@ -51,13 +51,15 @@ public class CJump extends IRInstruction {
 
     @Override
     public void renameUseReg(HashMap<Register, Register> renameMap) {
-        if(src1 instanceof Memory)
+        if(src1 instanceof Memory) {
+            src1 = ((Memory) src1).copy();
             ((Memory) src1).renameUseReg(renameMap);
-        else if(src1 instanceof Register && renameMap.containsKey(src1))
+        } else if(src1 instanceof Register && renameMap.containsKey(src1))
             src1 = renameMap.get(src1);
-        if(src2 instanceof Memory)
+        if(src2 instanceof Memory) {
+            src2 = ((Memory) src2).copy();
             ((Memory) src2).renameUseReg(renameMap);
-        else if(src2 instanceof Register && renameMap.containsKey(src2))
+        } else if(src2 instanceof Register && renameMap.containsKey(src2))
             src2 = renameMap.get(src2);
     }
 
