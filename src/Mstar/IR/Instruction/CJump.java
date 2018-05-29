@@ -2,13 +2,12 @@ package Mstar.IR.Instruction;
 
 import Mstar.IR.BasicBlock;
 import Mstar.IR.IIRVisitor;
-import Mstar.IR.Operand.Memory;
-import Mstar.IR.Operand.Operand;
-import Mstar.IR.Operand.Register;
-import Mstar.IR.Operand.StackSlot;
+import Mstar.IR.Operand.*;
 
 import java.util.HashMap;
 import java.util.LinkedList;
+
+import static Mstar.IR.Instruction.CJump.CompareOp.*;
 
 public class CJump extends IRInstruction {
     public enum CompareOp {
@@ -27,6 +26,35 @@ public class CJump extends IRInstruction {
         this.elseBB = elseBB;
         this.src1 = src1;
         this.src2 = src2;
+    }
+
+    public BasicBlock doCompare() {
+        assert src1 instanceof Immediate && src2 instanceof Immediate;
+        int v1 = ((Immediate) src1).value;
+        int v2 = ((Immediate) src2).value;
+        boolean r;
+        switch(op) {
+            case NE: r = v1 != v2; break;
+            case LE: r = v1 <= v2; break;
+            case GE: r = v1 >= v2; break;
+            case L: r = v1 < v2; break;
+            case G: r = v1 > v2; break;
+            case E: r = v1 == v2; break;
+            default: r = false; assert false;
+        }
+        return r ? thenBB : elseBB;
+    }
+
+    public CompareOp getOppositeCompareOp() {
+        switch(op) {
+            case E: return NE;
+            case G: return LE;
+            case L: return GE;
+            case GE: return L;
+            case LE: return G;
+            case NE: return E;
+            default: assert false; return E;
+        }
     }
 
     @Override

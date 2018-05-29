@@ -180,14 +180,16 @@ public class IRBuilder implements IAstVisitor {
         }
 
         if(returnInsts.size() > 1) {
+            boolean hasReturnValue = returnInsts.get(0).src != null;
             VirtualRegister vr = new VirtualRegister("return_value");
             BasicBlock leaveBB = new BasicBlock(curFunction, "leave");
             for(Return retInst : returnInsts) {
-                retInst.prepend(new Move(retInst.bb, vr, retInst.src));
+                if(hasReturnValue)
+                    retInst.prepend(new Move(retInst.bb, vr, retInst.src));
                 retInst.prepend(new Jump(retInst.bb, leaveBB));
                 retInst.remove();
             }
-            leaveBB.append(new Return(leaveBB, vr));
+            leaveBB.append(new Return(leaveBB, hasReturnValue ? vr : null));
             curFunction.leaveBB = leaveBB;
         } else {
             curFunction.leaveBB = curBB;
@@ -455,8 +457,7 @@ public class IRBuilder implements IAstVisitor {
         } else if(index instanceof Memory){
             VirtualRegister vr = new VirtualRegister("");
             curBB.append(new Move(curBB, vr, index));
-            curBB.append(new BinaryInst(curBB, BinaryInst.BinaryOp.ADD, vr, new Immediate(Config.REGISTER_WIDTH)));
-            memory = new Memory(base, vr, 1);
+            memory = new Memory(base, vr, Config.REGISTER_WIDTH, new Immediate(Config.REGISTER_WIDTH));
         } else {
             assert false;
             memory = null;
@@ -480,11 +481,6 @@ public class IRBuilder implements IAstVisitor {
         for(Expression e : node.arguments) {
             e.accept(this);
             Operand arg = exprResultMap.get(e);
-            if(arg instanceof Memory) {
-                VirtualRegister narg = new VirtualRegister("");
-                curBB.append(new Move(curBB, narg, arg));
-                arg = narg;
-            }
             args.add(arg);
         }
 
@@ -609,11 +605,6 @@ public class IRBuilder implements IAstVisitor {
                 for(Expression expression : node.methodCall.arguments) {
                     expression.accept(this);
                     Operand arg = exprResultMap.get(expression);
-                    if(arg instanceof Memory) {
-                        VirtualRegister narg = new VirtualRegister("");
-                        curBB.append(new Move(curBB, narg, arg));
-                        arg = narg;
-                    }
                     arguments.add(arg);
                 }
                 VirtualRegister retValue = isVoidType(node.methodCall.functionSymbol.returnType) ? null : new VirtualRegister("");

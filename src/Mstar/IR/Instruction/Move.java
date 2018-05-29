@@ -15,6 +15,10 @@ public class Move extends IRInstruction {
         super(bb);
         this.dest = dest;
         this.src = src;
+        if(src == null || dest == null) {
+            System.out.println("NO");
+        }
+        assert src != null && dest != null;
     }
 
     @Override

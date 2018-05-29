@@ -1,5 +1,7 @@
 package Mstar.Symbol;
 
+import Mstar.Config;
+
 import java.util.Collection;
 import java.util.LinkedList;
 
@@ -28,9 +30,7 @@ public class ClassType extends VariableType {
     @Override
     public int getBytes() {
         Collection<VariableSymbol> fields = symbol.classSymbolTable.variables.values();
-        int countBytes = 0;
-        for(VariableSymbol field : fields)
-            countBytes += field.type.getBytes();
+        int countBytes = fields.size() * Config.REGISTER_WIDTH;
         return countBytes;
     }
 }

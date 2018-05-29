@@ -7,6 +7,8 @@ import Mstar.IR.IRProgram;
 import Mstar.IR.Instruction.*;
 import Mstar.IR.Operand.*;
 
+import java.util.LinkedList;
+
 public class IRCorrector implements IIRVisitor {
     IRProgram irProgram;
 
@@ -96,7 +98,17 @@ public class IRCorrector implements IIRVisitor {
 
     @Override
     public void visit(CJump inst) {
-
+        if(inst.src1 instanceof Constant) {
+            if(inst.src2 instanceof Constant) {
+                inst.prepend(new Jump(inst.bb, inst.doCompare()));
+                inst.remove();
+            } else {
+                Operand tmp = inst.src1;
+                inst.src1 = inst.src2;
+                inst.src2 = tmp;
+                inst.op = inst.getOppositeCompareOp();
+            }
+        }
     }
 
     @Override
@@ -116,7 +128,15 @@ public class IRCorrector implements IIRVisitor {
 
     @Override
     public void visit(Call inst) {
-
+        LinkedList<Operand> args = inst.args;
+        for(int i = 0; i < args.size(); i++) {
+            Operand operand = args.get(i);
+            if(operand instanceof Memory && !(operand instanceof StackSlot)) {
+                VirtualRegister vr = new VirtualRegister("");
+                inst.prepend(new Move(inst.bb, vr, operand));
+                args.set(i, vr);
+            }
+        }
     }
 
     @Override
