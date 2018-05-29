@@ -106,7 +106,7 @@ public class IRCorrector implements IIRVisitor {
                 Operand tmp = inst.src1;
                 inst.src1 = inst.src2;
                 inst.src2 = tmp;
-                inst.op = inst.getOppositeCompareOp();
+                inst.op = inst.getReverseCompareOp();
             }
         }
     }

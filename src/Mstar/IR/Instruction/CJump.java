@@ -45,14 +45,14 @@ public class CJump extends IRInstruction {
         return r ? thenBB : elseBB;
     }
 
-    public CompareOp getOppositeCompareOp() {
+    public CompareOp getReverseCompareOp() {
         switch(op) {
-            case E: return NE;
+            case E: return E;
             case G: return LE;
             case L: return GE;
             case GE: return L;
             case LE: return G;
-            case NE: return E;
+            case NE: return NE;
             default: assert false; return E;
         }
     }

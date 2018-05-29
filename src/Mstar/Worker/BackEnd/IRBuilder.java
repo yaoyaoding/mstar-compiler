@@ -740,7 +740,7 @@ public class IRBuilder implements IAstVisitor {
             case "==": cop = CJump.CompareOp.E; break;
             case "!=": cop = CJump.CompareOp.NE; break;
         }
-        if(lhs.type instanceof ClassType) { //  str (<|<=|>|>=|==|!=) str
+        if(lhs.type instanceof ClassType && ((ClassType) lhs.type).name.equals("string")) { //  str (<|<=|>|>=|==|!=) str
             VirtualRegister scr = new VirtualRegister("");
             curBB.append(new Call(curBB, scr, library_stringCompare, olhs, orhs));
             curBB.append(new CJump(curBB, scr, cop, new Immediate(0), trueBB, falseBB));

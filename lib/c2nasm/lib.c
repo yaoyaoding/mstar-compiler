@@ -72,7 +72,7 @@ int64_t __string_parseInt(pointer_t ptr) {
 		neg = 1;
 		ptr++;
 	}
-	while(*ptr) {
+	while('0' <= *ptr && *ptr <= '9') {
 		value = value * 10 + (*ptr - '0');
 		ptr++;
 	}
