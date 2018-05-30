@@ -17,23 +17,20 @@ public class Call extends IRInstruction {
 
     private void addCalleeFunction() {
         Function caller = super.bb.function;
-        if(!caller.callee.contains(func))
-            caller.callee.add(func);
-    }
-    public Call(BasicBlock bb, Address dest, Function func, LinkedList<Operand> args) {
-        super(bb);
-        this.dest = dest;
-        this.func = func;
-        this.args = new LinkedList<>();
-        this.args.addAll(args);
-        addCalleeFunction();
+        caller.callee.add(func);
     }
     public Call(BasicBlock bb, Address dest, Function func, Operand... args) {
         super(bb);
         this.dest = dest;
         this.func = func;
-        this.args = new LinkedList<>();
-        this.args.addAll(Arrays.asList(args));
+        this.args = new LinkedList<>(Arrays.asList(args));
+        addCalleeFunction();
+    }
+    public Call(BasicBlock bb, Address dest, Function func, LinkedList<Operand> args) {
+        super(bb);
+        this.dest = dest;
+        this.func = func;
+        this.args = new LinkedList<>(args);
         addCalleeFunction();
     }
 

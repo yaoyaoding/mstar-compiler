@@ -57,13 +57,9 @@ public class StackFrameBuilder {
         framesMap.put(function, frame);
         LinkedList<VirtualRegister> parameters = function.parameters;
         int[] paraRegsiters = new int[] {7, 6, 2, 1, 8, 9};
-        IRInstruction headInst = function.enterBB.head;
         for(int i = 0; i < parameters.size(); i++) {
-            StackSlot ss = (StackSlot) parameters.get(i).spillPlace;
-            if(i < paraRegsiters.length) {
-                headInst.prepend(new Move(headInst.bb, ss, X86RegisterSet.regs.get(paraRegsiters[i])));
-                frame.temporaries.add(ss);
-            } else {
+            if(i >= paraRegsiters.length) {
+                StackSlot ss = (StackSlot) parameters.get(i).spillPlace;
                 frame.parameters.add(ss);
             }
         }
@@ -72,7 +68,7 @@ public class StackFrameBuilder {
             for(IRInstruction inst = bb.head; inst != null; inst = inst.next) {
                 LinkedList<StackSlot> slots = inst.getStackSlots();
                 for(StackSlot ss : slots) {
-                    if(frame.parameters.contains(ss) || frame.temporaries.contains(ss))
+                    if(frame.parameters.contains(ss))
                         continue;
                     slotsSet.add(ss);
                 }
@@ -81,11 +77,13 @@ public class StackFrameBuilder {
         frame.temporaries.addAll(slotsSet);
         for(int i = 0; i < frame.parameters.size(); i++) {
             StackSlot ss = frame.parameters.get(i);
+            assert ss.base == null && ss.constant == null;
             ss.base = X86RegisterSet.rbp;
             ss.constant = new Immediate(16 + 8 * i);
         }
         for(int i = 0; i < frame.temporaries.size(); i++) {
             StackSlot ss = frame.temporaries.get(i);
+            assert ss.base == null && ss.constant == null;
             ss.base = X86RegisterSet.rbp;
             ss.constant = new Immediate(-8 - 8 * i);
         }
@@ -93,56 +91,15 @@ public class StackFrameBuilder {
         /*
             add prologue
          */
-        headInst = function.enterBB.head;
+        IRInstruction headInst = function.enterBB.head;
         headInst.prepend(new Push(headInst.bb, X86RegisterSet.rbp));
         headInst.prepend(new Move(headInst.bb, X86RegisterSet.rbp, X86RegisterSet.rsp));
         headInst.prepend(new BinaryInst(headInst.bb, BinaryInst.BinaryOp.SUB, X86RegisterSet.rsp, new Immediate(frame.getFrameSize())));
 
         /*
-            TODO: add callee saved register backup
-         */
-
-        /*
-            handle call function
-         */
-        for(BasicBlock bb : function.basicblocks) {
-            for(IRInstruction inst = bb.head; inst != null; inst = inst.next) {
-                if(!(inst instanceof Call)) continue;
-                Call call = (Call)inst;
-                LinkedList<Operand> args = call.args;
-                IRInstruction curInst = call;
-                for(int i = 0; i < args.size(); i++) {
-                    Operand operand = args.get(i);
-                    if(i < 6) {
-                        call.prepend(new Move(bb, X86RegisterSet.regs.get(paraRegsiters[i]), operand));
-                    } else {
-                        curInst.prepend(new Push(bb, operand));
-                        curInst = curInst.prev;
-                    }
-                }
-                if(call.dest != null) {
-                    call.append(new Move(bb, call.dest, X86RegisterSet.rax));
-                    inst = inst.next;   //  skip the added inst
-                }
-                call.args = null;
-                call.dest = null;
-            }
-        }
-
-        /*
             handle ret
          */
         Return ret = (Return)function.leaveBB.tail;
-        if(ret.src != null) {
-            ret.prepend(new Move(function.leaveBB, X86RegisterSet.rax, ret.src));
-            ret.src = null;
-        }
-
-        /*
-            TODO: add resume callee saved register
-         */
-
-        ret.prepend(new Leave(function.leaveBB));
     }
 
     public void run() {

@@ -60,22 +60,24 @@ public class IRBuilder implements IAstVisitor {
         initLibraryFunctions();
     }
 
-    public static VirtualRegister[] vargRegs = new VirtualRegister[] {
-            new VirtualRegister("rdi", X86RegisterSet.rdi),
-            new VirtualRegister("rsi", X86RegisterSet.rsi),
-            new VirtualRegister("rdx", X86RegisterSet.rdx),
-            new VirtualRegister("rcx", X86RegisterSet.rcx),
-            new VirtualRegister("r8", X86RegisterSet.r8),
-            new VirtualRegister("r9", X86RegisterSet.r9)
+    public static VirtualRegister[] vargRegs = new VirtualRegister[6];
+    {
+        vargRegs[0] = new VirtualRegister("rdi", X86RegisterSet.rdi);
+        vargRegs[1] = new VirtualRegister("rsi", X86RegisterSet.rsi);
+        vargRegs[2] = new VirtualRegister("rdx", X86RegisterSet.rdx);
+        vargRegs[3] = new VirtualRegister("rcx", X86RegisterSet.rcx);
+        vargRegs[4] = new VirtualRegister("r8", X86RegisterSet.r8);
+        vargRegs[5] = new VirtualRegister("r9", X86RegisterSet.r9);
     };
-    public static VirtualRegister[] vcalleeSaveRegs = new VirtualRegister[] {
-            new VirtualRegister("rbx", X86RegisterSet.rbx),
-            new VirtualRegister("r10", X86RegisterSet.r10 ),
-            new VirtualRegister("r11", X86RegisterSet.r11 ),
-            new VirtualRegister("r12", X86RegisterSet.r12 ),
-            new VirtualRegister("r13", X86RegisterSet.r13 ),
-            new VirtualRegister("r14", X86RegisterSet.r14 ),
-            new VirtualRegister("r15", X86RegisterSet.r15)
+    public static VirtualRegister[] vcalleeSaveRegs = new VirtualRegister[7];
+    {
+        vcalleeSaveRegs[0] = new VirtualRegister("rbx", X86RegisterSet.rbx);
+        vcalleeSaveRegs[1] = new VirtualRegister("r10", X86RegisterSet.r10 );
+        vcalleeSaveRegs[2] = new VirtualRegister("r11", X86RegisterSet.r11 );
+        vcalleeSaveRegs[3] = new VirtualRegister("r12", X86RegisterSet.r12 );
+        vcalleeSaveRegs[4] = new VirtualRegister("r13", X86RegisterSet.r13 );
+        vcalleeSaveRegs[5] = new VirtualRegister("r14", X86RegisterSet.r14 );
+        vcalleeSaveRegs[6] = new VirtualRegister("r15", X86RegisterSet.r15);
     };
     public static VirtualRegister vrax = new VirtualRegister("rax", X86RegisterSet.rax);
     public static VirtualRegister vrdx = vargRegs[2];

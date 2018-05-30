@@ -13,12 +13,14 @@ public class BasicBlock {
     public IRInstruction head;
     public IRInstruction tail;
 
-    LinkedList<BasicBlock> frontiers;
-    LinkedList<BasicBlock> successors;
+    LinkedList<BasicBlock> frontiers = null;
+    LinkedList<BasicBlock> successors = null;
 
     public BasicBlock(Function function, String hint) {
         this.function = function;
         this.hint = hint;
+        this.frontiers = new LinkedList<>();
+        this.successors = new LinkedList<>();
         function.basicblocks.add(this);
     }
 
@@ -27,6 +29,8 @@ public class BasicBlock {
     }
 
     public void append(IRInstruction inst) {
+        if(tail instanceof CJump || tail instanceof Jump || tail instanceof Return)
+            return;
         if (head == null) {
             inst.prev = inst.next = null;
             head = tail = inst;

@@ -8,12 +8,11 @@ import Mstar.IR.Instruction.*;
 import Mstar.IR.Operand.*;
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.Formatter;
 import java.util.HashMap;
 
-import static Mstar.IR.X86RegisterSet.rax;
-import static Mstar.IR.X86RegisterSet.rcx;
-import static Mstar.IR.X86RegisterSet.rdx;
+import static Mstar.IR.X86RegisterSet.*;
 import static java.lang.System.exit;
 
 public class IRPrinter implements IIRVisitor {
@@ -23,6 +22,9 @@ public class IRPrinter implements IIRVisitor {
     HashMap<VirtualRegister,String> varNames;
     HashMap<StackSlot,String> ssNames;
     HashMap<StaticData,String> sdNames;
+
+    BasicBlock nextBasicBlock = null;
+
     boolean inLeaInst;
     int bbCount = 0;
     int varCount = 0;
@@ -155,14 +157,12 @@ public class IRPrinter implements IIRVisitor {
             }
             append(") {\n");
         }
-        function.enterBB.accept(this);
-        for(BasicBlock bb : function.basicblocks) {
-            if(bb == function.enterBB || bb == function.leaveBB)
-                continue;
+        ArrayList<BasicBlock> reversePostOrder = new ArrayList<>(function.reversePostOrder);
+        for(int i = 0; i < reversePostOrder.size(); i++) {
+            BasicBlock bb = reversePostOrder.get(i);
+            nextBasicBlock = (i + 1 == reversePostOrder.size()) ? null : reversePostOrder.get(i+1);
             bb.accept(this);
         }
-        if(function.leaveBB != function.enterBB)
-            function.leaveBB.accept(this);
         if(!showNasm)
             append("}\n");
     }
@@ -176,7 +176,10 @@ public class IRPrinter implements IIRVisitor {
 
     @Override
     public void visit(VirtualRegister operand) {
-        append(getVirtualRegsiterName(operand));
+        if(operand.allocatedPhysicalRegister != null)
+            visit(operand.allocatedPhysicalRegister);
+        else
+            append(getVirtualRegsiterName(operand));
     }
 
     @Override
@@ -248,60 +251,26 @@ public class IRPrinter implements IIRVisitor {
     }
 
     private void processMul(BinaryInst inst) {
-        if(inst.dest != rdx) visit(new Push(null, rdx));
-        if(inst.dest != rax) visit(new Push(null, rax));
-        if(inst.src == rax) {
-            append("\timul ");
-            inst.dest.accept(this);
-            append("\n");
-            visit(new Move(null, inst.dest, rax));
-        } else {
-            visit(new Move(null, rax, inst.dest));
-            append("\timul ");
-            inst.src.accept(this);
-            append("\n");
-            visit(new Move(null, inst.dest, rax));
-        }
-        visit(new Move(null, rax, inst.dest));
-        if(inst.dest != rax) visit(new Pop(null, rax));
-        if(inst.dest != rdx) visit(new Pop(null, rdx));
+        append("\timul ");
+        inst.src.accept(this);
+        append("\n");
     }
     void processDivMod(BinaryInst inst) {
-        PhysicalRegister need = inst.op == BinaryInst.BinaryOp.DIV ? rax : rdx;
-
-        if(inst.dest != rdx) visit(new Push(null, rdx));
-        if(inst.dest != rax) visit(new Push(null, rax));
-        if(inst.dest != rcx) visit(new Push(null, rcx));
-
-        visit(new Push(null, inst.dest));
-        visit(new Push(null, inst.src));
-
-        visit(new Pop(null, rcx));
-        visit(new Pop(null, rax));
-        visit(new Move(null, rdx, new Immediate(0)));
-
         append("\tidiv ");
-        rcx.accept(this);
+        inst.src.accept(this);
         append("\n");
-
-        visit(new Move(null, inst.dest, need));
-        if(inst.dest != rcx) visit(new Pop(null, rcx));
-        if(inst.dest != rax) visit(new Pop(null, rax));
-        if(inst.dest != rdx) visit(new Pop(null, rdx));
     }
 
     @Override
     public void visit(BinaryInst inst) {
         String op = null;
-        if(showNasm) {
-            if(inst.op == BinaryInst.BinaryOp.MUL) {
-                processMul(inst);
-                return;
-            }
-            if(inst.op == BinaryInst.BinaryOp.DIV || inst.op == BinaryInst.BinaryOp.MOD) {
-                processDivMod(inst);
-                return;
-            }
+        if(inst.op == BinaryInst.BinaryOp.MUL) {
+            processMul(inst);
+            return;
+        }
+        if(inst.op == BinaryInst.BinaryOp.DIV || inst.op == BinaryInst.BinaryOp.MOD) {
+            processDivMod(inst);
+            return;
         }
         switch(inst.op) {
             case OR:  op = "or"; break;
@@ -379,7 +348,8 @@ public class IRPrinter implements IIRVisitor {
             inst.src2.accept(this);
             append("\n");
             append("\t" + op + " " + getBasicBlockName(inst.thenBB) + "\n");
-            append("\tjmp" + " " + getBasicBlockName(inst.elseBB) + "\n");
+            if(inst.elseBB != nextBasicBlock)
+                append("\tjmp" + " " + getBasicBlockName(inst.elseBB) + "\n");
         } else {
             append("\t" + op + " ");
             inst.src1.accept(this);
@@ -391,7 +361,8 @@ public class IRPrinter implements IIRVisitor {
 
     @Override
     public void visit(Jump inst) {
-        append("\tjmp " + getBasicBlockName(inst.targetBB) + "\n");
+        if(inst.targetBB != nextBasicBlock)
+            append("\tjmp " + getBasicBlockName(inst.targetBB) + "\n");
     }
 
     @Override
@@ -408,8 +379,6 @@ public class IRPrinter implements IIRVisitor {
     @Override
     public void visit(Return inst) {
         append("\tret ");
-        if(inst.src != null)
-            inst.src.accept(this);
         append("\n");
     }
 
@@ -417,7 +386,7 @@ public class IRPrinter implements IIRVisitor {
     public void visit(Call inst) {
         append("\tcall ");
 
-        if(inst.dest != null) {
+        if(!showNasm && inst.dest != null) {
             inst.dest.accept(this);
             append(" = ");
         }
@@ -427,7 +396,7 @@ public class IRPrinter implements IIRVisitor {
         else
             append(inst.func.name);
 
-        if (inst.args != null) {
+        if (!showNasm && inst.args != null) {
             for (Operand operand : inst.args) {
                 append(", ");
                 operand.accept(this);
@@ -439,5 +408,10 @@ public class IRPrinter implements IIRVisitor {
     @Override
     public void visit(Leave inst) {
         append("\tleave\n");
+    }
+
+    @Override
+    public void visit(Cdq inst) {
+        append("\tcdq\n");
     }
 }

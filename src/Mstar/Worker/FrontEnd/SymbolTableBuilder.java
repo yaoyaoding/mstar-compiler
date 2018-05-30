@@ -16,6 +16,7 @@ public class SymbolTableBuilder implements IAstVisitor {
     public ErrorRecorder errorRecorder;
     public GlobalSymbolTable globalSymbolTable;
     public SymbolTable currentSymbolTable;
+    public FunctionSymbol curFunction;
     private String name;
     public HashMap<SymbolTable,ClassSymbol> symbolTableToClassSymbol;
 
@@ -183,7 +184,8 @@ public class SymbolTableBuilder implements IAstVisitor {
                         || type instanceof ClassType && ((ClassType) type).name.equals("null"))
                     errorRecorder.addRecord(d.location, "can not define a class with type null or void");
                 boolean isClassField = symbolTableToClassSymbol.containsKey(currentSymbolTable);
-                d.symbol = new VariableSymbol(d.name, type, d.location, isClassField);
+                boolean isGlobalVariable = currentSymbolTable == globalSymbolTable;
+                d.symbol = new VariableSymbol(d.name, type, d.location, isClassField, isGlobalVariable);
                 currentSymbolTable.putVariableSymbol(d.name, d.symbol);
             }
         } else {
@@ -192,6 +194,7 @@ public class SymbolTableBuilder implements IAstVisitor {
     }
     private void defineFunction(FuncDeclaration funcDeclaration, ClassSymbol classSymbol) {
         FunctionSymbol functionSymbol = currentSymbolTable.getFunctionSymbol(funcDeclaration.name);
+        curFunction = functionSymbol;
 
         functionSymbol.functionSymbolTable = new SymbolTable(currentSymbolTable);
         enter(functionSymbol.functionSymbolTable);
@@ -325,6 +328,9 @@ public class SymbolTableBuilder implements IAstVisitor {
         }
         node.symbol = symbol;
         node.type = symbol.type;
+        if(symbol.isGlobalVariable) {
+            curFunction.usedGlobalVariables.add(symbol);
+        }
     }
 
     @Override

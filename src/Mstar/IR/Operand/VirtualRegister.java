@@ -4,11 +4,16 @@ import Mstar.IR.IIRVisitor;
 
 public class VirtualRegister extends Register {
     public String hint;
-    public Memory spillPlace;
+    public PhysicalRegister allocatedPhysicalRegister;
+    public Memory spillPlace = null;
 
     public VirtualRegister(String hint) {
         this.hint = hint;
-        this.spillPlace = new StackSlot(hint + "slot");
+        this.allocatedPhysicalRegister = null;
+    }
+    public VirtualRegister(String hint, PhysicalRegister physicalRegister) {
+        this.hint = hint;
+        this.allocatedPhysicalRegister = physicalRegister;
     }
 
     @Override

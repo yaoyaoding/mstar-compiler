@@ -2,20 +2,16 @@ package Mstar.IR.Instruction;
 
 import Mstar.IR.BasicBlock;
 import Mstar.IR.IIRVisitor;
-import Mstar.IR.Operand.Memory;
-import Mstar.IR.Operand.Operand;
 import Mstar.IR.Operand.Register;
 import Mstar.IR.Operand.StackSlot;
 
 import java.util.HashMap;
 import java.util.LinkedList;
 
-public class Return extends IRInstruction {
-
-    public Return(BasicBlock bb) {
+public class Cdq extends IRInstruction {
+    public Cdq(BasicBlock bb) {
         super(bb);
     }
-
     @Override
     public void renameUseReg(HashMap<Register, Register> renameMap) { }
 

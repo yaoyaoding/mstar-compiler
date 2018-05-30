@@ -28,6 +28,7 @@ public class MstarCompiler {
         MstarLexer mstarLexer = new MstarLexer(ais);
         CommonTokenStream tokens = new CommonTokenStream(mstarLexer);
         MstarParser parser = new MstarParser(tokens);
+        X86RegisterSet.init();
 
         //  record errors
         ErrorRecorder errorRecorder = new ErrorRecorder();
@@ -96,17 +97,16 @@ public class MstarCompiler {
             System.err.println("=====================================================");
             System.err.println("Intermediate Representation Before Register Allocator");
             IRPrinter irPrinter = new IRPrinter(irProgram);
-            irPrinter.showBlockHint = true;
+            irPrinter.showBlockHint = false;
             irPrinter.showNasm = false;
             irPrinter.visit(irProgram);
             irPrinter.printTo(System.err);
         }
 
-        //  IR with VirtualRegister -> IR with PhysicalRegister
-        X86RegisterSet.init();
-        NaiveAllocator naiveAllocator = new NaiveAllocator(irProgram, X86RegisterSet.regs);
-        naiveAllocator.run();
 
+        //  IR with VirtualRegister -> IR with PhysicalRegister
+        NaiveAllocator naiveAllocator = new NaiveAllocator(irProgram);
+        naiveAllocator.run();
         if(Config.printIRAfterAllocator) {
             System.err.println("====================================================");
             System.err.println("Intermediate Representation After Register Allocator");

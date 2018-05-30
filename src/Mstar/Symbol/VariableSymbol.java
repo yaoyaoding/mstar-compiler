@@ -10,13 +10,15 @@ public class VariableSymbol {
     public TokenLocation location;
 
     public boolean isClassField;
+    public boolean isGlobalVariable;
     public VirtualRegister virtualRegister;
 
 //    public VariableSymbol() {}
-    public VariableSymbol(String name, VariableType type, TokenLocation location, boolean isClassField) {
+    public VariableSymbol(String name, VariableType type, TokenLocation location, boolean isClassField, boolean isGlobalVariable) {
         this.name = name;
         this.type = type;
         this.location = location;
         this.isClassField = isClassField;
+        this.isGlobalVariable = isGlobalVariable;
     }
 }

@@ -1,12 +1,15 @@
 package Mstar.Worker.BackEnd;
 
+import Mstar.Config;
 import Mstar.IR.BasicBlock;
 import Mstar.IR.Function;
 import Mstar.IR.IIRVisitor;
 import Mstar.IR.IRProgram;
 import Mstar.IR.Instruction.*;
 import Mstar.IR.Operand.*;
+import Mstar.Symbol.VariableSymbol;
 
+import java.util.HashSet;
 import java.util.LinkedList;
 
 public class IRCorrector implements IIRVisitor {
@@ -69,12 +72,24 @@ public class IRCorrector implements IIRVisitor {
 
     @Override
     public void visit(BinaryInst inst) {
-
+        if((inst.op == BinaryInst.BinaryOp.MUL || inst.op == BinaryInst.BinaryOp.DIV || inst.op == BinaryInst.BinaryOp.MOD)
+                && inst.src instanceof Constant) {
+            VirtualRegister vr = new VirtualRegister("");
+            inst.prepend(new Move(inst.bb, vr, inst.src));
+            inst.src = vr;
+        }
     }
 
     @Override
     public void visit(UnaryInst inst) {
 
+    }
+
+    private PhysicalRegister getPhysical(Operand v) {
+        if(v instanceof VirtualRegister)
+            return ((VirtualRegister) v).allocatedPhysicalRegister;
+        else
+            return null;
     }
 
     @Override
@@ -83,7 +98,22 @@ public class IRCorrector implements IIRVisitor {
             VirtualRegister vr = new VirtualRegister("");
             inst.prepend(new Move(inst.bb, vr, inst.src));
             inst.src = vr;
+        }  else {
+            if(Config.useNaiveAllocator) {
+                PhysicalRegister pdest = getPhysical(inst.dest);
+                PhysicalRegister psrc = getPhysical(inst.src);
+                if(pdest != null && inst.src instanceof Memory) {
+                    VirtualRegister vr = new VirtualRegister("");
+                    inst.prepend(new Move(inst.bb, vr, inst.src));
+                    inst.src = vr;
+                } else if(psrc != null && inst.dest instanceof Memory) {
+                    VirtualRegister vr = new VirtualRegister("");
+                    inst.prepend(new Move(inst.bb, vr, inst.dest));
+                    inst.dest= vr;
+                }
+            }
         }
+
     }
 
     @Override
@@ -128,19 +158,34 @@ public class IRCorrector implements IIRVisitor {
 
     @Override
     public void visit(Call inst) {
-        LinkedList<Operand> args = inst.args;
-        for(int i = 0; i < args.size(); i++) {
-            Operand operand = args.get(i);
-            if(operand instanceof Memory && !(operand instanceof StackSlot)) {
-                VirtualRegister vr = new VirtualRegister("");
-                inst.prepend(new Move(inst.bb, vr, operand));
-                args.set(i, vr);
+        Function caller = inst.bb.function;
+        Function callee = inst.func;
+        HashSet<VariableSymbol> callerUsed = caller.usedGlobalVariables;
+        HashSet<VariableSymbol> calleeUsed = callee.recursiveUsedGlobalVariables;
+        for(VariableSymbol vs : callerUsed) {
+            if(calleeUsed.contains(vs)) {
+                inst.prepend(new Move(inst.bb, vs.virtualRegister.spillPlace, vs.virtualRegister));
+            }
+        }
+        while(inst.args.size() > 6)
+            inst.prepend(new Push(inst.bb, inst.args.removeLast()));
+        for(int i = inst.args.size() - 1; i >= 0; i--)
+            inst.prepend(new Move(inst.bb, IRBuilder.vargRegs[i], inst.args.get(i)));
+        inst.args.clear();
+        for(VariableSymbol vs : callerUsed) {
+            if(calleeUsed.contains(vs)) {
+                inst.append(new Move(inst.bb, vs.virtualRegister, vs.virtualRegister.spillPlace));
             }
         }
     }
 
     @Override
     public void visit(Leave inst) {
+
+    }
+
+    @Override
+    public void visit(Cdq inst) {
 
     }
 }

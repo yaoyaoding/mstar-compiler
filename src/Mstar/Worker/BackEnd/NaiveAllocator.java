@@ -3,21 +3,26 @@ package Mstar.Worker.BackEnd;
 import Mstar.IR.BasicBlock;
 import Mstar.IR.Function;
 import Mstar.IR.IRProgram;
-import Mstar.IR.Instruction.Call;
-import Mstar.IR.Instruction.IRInstruction;
-import Mstar.IR.Instruction.Move;
+import Mstar.IR.Instruction.*;
 import Mstar.IR.Operand.*;
 
 import java.util.*;
 
+import static Mstar.IR.X86RegisterSet.*;
+
 public class NaiveAllocator {
     IRProgram irProgram;
-    LinkedList<PhysicalRegister> physicalRegisters;
+    LinkedList<PhysicalRegister> generalRegisters = new LinkedList<>();
 
-    public NaiveAllocator(IRProgram irProgram, LinkedList<PhysicalRegister> physicalRegisters) {
+    public NaiveAllocator(IRProgram irProgram) {
         this.irProgram = irProgram;
-        this.physicalRegisters = new LinkedList<>();
-        this.physicalRegisters.addAll(physicalRegisters);
+        this.generalRegisters.add(rbx);
+        this.generalRegisters.add(r10);
+        this.generalRegisters.add(r11);
+        this.generalRegisters.add(r12);
+        this.generalRegisters.add(r13);
+        this.generalRegisters.add(r14);
+        this.generalRegisters.add(r15);
     }
 
     public void run() {
@@ -25,21 +30,19 @@ public class NaiveAllocator {
             processFunction(function);
     }
 
+    private PhysicalRegister getPhysical(Operand v) {
+        if(v instanceof VirtualRegister)
+            return ((VirtualRegister) v).allocatedPhysicalRegister;
+        else
+            return null;
+    }
+
     private void processFunction(Function function) {
         for(BasicBlock bb : function.basicblocks) {
             for(IRInstruction inst = bb.head; inst != null; inst = inst.next) {
-                if(inst instanceof Call) {
-                    Call call = (Call) inst;
-                    LinkedList<Operand> args = call.args;
-                    for(int i = 0; i < args.size(); i++) {
-                        Operand operand = args.get(i);
-                        if(operand instanceof VirtualRegister) {
-                            args.set(i, ((VirtualRegister) operand).spillPlace);
-                        } else {
-                            assert operand instanceof Constant;
-                        }
-                    }
-                }
+
+                if(inst instanceof Call) continue;
+
                 HashMap<Register, Register> renameMap = new HashMap<>();
                 HashSet<Register> allRegs = new HashSet<>();
                 HashSet<Register> usedRegs = new HashSet<>(inst.getUseRegs());
@@ -47,27 +50,67 @@ public class NaiveAllocator {
                 allRegs.addAll(usedRegs);
                 allRegs.addAll(definedRegs);
 
+                for(Register avr : allRegs) {
+                    assert avr instanceof VirtualRegister;
+                    VirtualRegister vr = (VirtualRegister) avr;
+                    if(vr.allocatedPhysicalRegister != null) continue;
+                    if(vr.spillPlace == null)
+                        vr.spillPlace = new StackSlot(vr.hint);
+                }
+
+                if(inst instanceof Move) {
+                    Move move = (Move)inst;
+                    Address dest = move.dest;
+                    Operand src = move.src;
+                    PhysicalRegister pdest = getPhysical(dest);
+                    PhysicalRegister psrc = getPhysical(src);
+                    if(pdest != null && psrc != null) {
+                        move.dest = pdest;
+                        move.src = psrc;
+                        continue;
+                    } else if(pdest != null) {
+                        move.dest = pdest;
+                        if(move.src instanceof VirtualRegister) {
+                            move.src = ((VirtualRegister) move.src).spillPlace;
+                        } else if(move.src instanceof Constant) {
+                        } else {
+                            assert false;
+                        }
+                        continue;
+                    } else if(psrc != null) {
+                        move.src = psrc;
+                        if(move.dest instanceof VirtualRegister) {
+                            move.dest = ((VirtualRegister) move.dest).spillPlace;
+                        } else {
+                            assert false;
+                        }
+                        continue;
+                    }
+                }
+
                 int cnt = 0;
                 for (Register reg : allRegs) {
-                    try {
-                        assert reg instanceof VirtualRegister;
-                    }catch (Error e) {
-                        e.getStackTrace();
-                        System.err.println(function.name);
-                        System.err.println(bb.hint);
+                    if (!renameMap.containsKey(reg)) {
+                        PhysicalRegister pr = ((VirtualRegister)reg).allocatedPhysicalRegister;
+                        if(pr == null)
+                            renameMap.put(reg, generalRegisters.get(cnt++));
+                        else {
+                            renameMap.put(reg, pr);
+                        }
                     }
-                    if (!renameMap.containsKey(reg))
-                        renameMap.put(reg, physicalRegisters.get(cnt++));
                 }
                 inst.renameUseReg(renameMap);
                 inst.renameDefReg(renameMap);
 
                 for (Register reg : usedRegs) {
-                    inst.prepend(new Move(bb, renameMap.get(reg), ((VirtualRegister) reg).spillPlace));
+                    if(((VirtualRegister)reg).allocatedPhysicalRegister == null)
+                        inst.prepend(new Move(bb, renameMap.get(reg),((VirtualRegister) reg).spillPlace));
                 }
                 for (Register reg : definedRegs) {
-                    inst.append(new Move(bb, ((VirtualRegister) reg).spillPlace, renameMap.get(reg)));
-                    inst = inst.next;
+                    if(((VirtualRegister)reg).allocatedPhysicalRegister == null) {
+                        inst.append(new Move(bb, ((VirtualRegister) reg).spillPlace, renameMap.get(reg)));
+                        inst = inst.next;
+                    }
                 }
             }
         }
