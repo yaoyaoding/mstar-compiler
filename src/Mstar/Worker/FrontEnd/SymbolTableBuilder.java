@@ -256,7 +256,11 @@ public class SymbolTableBuilder implements IAstVisitor {
 
     @Override
     public void visit(Statement node) {
-        assert false;
+        try {
+            assert false;
+        } catch (Error e) {
+            e.getStackTrace();
+        }
     }
 
     @Override
@@ -329,7 +333,7 @@ public class SymbolTableBuilder implements IAstVisitor {
         }
         node.symbol = symbol;
         node.type = symbol.type;
-        if(symbol.isGlobalVariable) {
+        if(symbol.isGlobalVariable && curFunction != null) {
             curFunction.usedGlobalVariables.add(symbol);
         }
     }
@@ -482,4 +486,7 @@ public class SymbolTableBuilder implements IAstVisitor {
         node.rhs.accept(this);
         node.type = new PrimitiveType("void", globalSymbolTable.getPrimitiveSymbol("void"));
     }
+
+    @Override
+    public void visit(EmptyStatement node) { }
 }

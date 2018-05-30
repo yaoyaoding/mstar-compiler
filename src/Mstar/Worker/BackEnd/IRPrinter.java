@@ -12,7 +12,6 @@ import java.util.ArrayList;
 import java.util.Formatter;
 import java.util.HashMap;
 
-import static Mstar.IR.X86RegisterSet.*;
 import static java.lang.System.exit;
 
 public class IRPrinter implements IIRVisitor {
@@ -250,26 +249,19 @@ public class IRPrinter implements IIRVisitor {
         append(getStaticDataName(operand));
     }
 
-    private void processMul(BinaryInst inst) {
-        append("\timul ");
-        inst.src.accept(this);
-        append("\n");
-    }
-    void processDivMod(BinaryInst inst) {
-        append("\tidiv ");
-        inst.src.accept(this);
-        append("\n");
-    }
-
     @Override
     public void visit(BinaryInst inst) {
         String op = null;
         if(inst.op == BinaryInst.BinaryOp.MUL) {
-            processMul(inst);
+            append("\timul ");
+            inst.src.accept(this);
+            append("\n");
             return;
         }
         if(inst.op == BinaryInst.BinaryOp.DIV || inst.op == BinaryInst.BinaryOp.MOD) {
-            processDivMod(inst);
+            append("\tidiv ");
+            inst.src.accept(this);
+            append("\n");
             return;
         }
         switch(inst.op) {
@@ -279,10 +271,16 @@ public class IRPrinter implements IIRVisitor {
             case DIV: op = "div"; break;
             case MOD: op = "mod"; break;
             case MUL: op = "mul"; break;
-            case SHL: op = "shl"; break;
-            case SHR: op = "shr"; break;
+            case SAL: op = "sal"; break;
+            case SAR: op = "sar"; break;
             case SUB: op = "sub"; break;
             case XOR: op = "xor"; break;
+        }
+        if(inst.op == BinaryInst.BinaryOp.SAL || inst.op == BinaryInst.BinaryOp.SAR) {
+            append("\t" + op + " ");
+            inst.dest.accept(this);
+            append(", cl\n");
+            return;
         }
         append("\t" + op + " ");
         inst.dest.accept(this);

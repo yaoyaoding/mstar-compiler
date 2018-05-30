@@ -9,7 +9,7 @@ import java.util.LinkedList;
 
 public class BinaryInst extends IRInstruction {
     public enum BinaryOp {
-        ADD, SUB, MUL, DIV, MOD, SHL, SHR, AND, OR, XOR
+        ADD, SUB, MUL, DIV, MOD, SAL, SAR, AND, OR, XOR
     }
     public BinaryOp op;
     public Address dest;

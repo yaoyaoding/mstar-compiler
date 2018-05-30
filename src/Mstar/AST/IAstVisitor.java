@@ -35,4 +35,5 @@ public interface IAstVisitor{
     void visit(BinaryExpression node);
     void visit(TernaryExpression node);
     void visit(AssignExpression node);
+    void visit(EmptyStatement node);
 }

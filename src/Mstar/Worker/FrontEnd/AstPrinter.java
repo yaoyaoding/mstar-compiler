@@ -350,4 +350,7 @@ public class AstPrinter implements IAstVisitor {
         node.rhs.accept(this);
         appendCurrentLine(")");
     }
+
+    @Override
+    public void visit(EmptyStatement node) { }
 }

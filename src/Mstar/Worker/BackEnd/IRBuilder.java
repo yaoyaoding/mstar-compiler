@@ -11,7 +11,6 @@ import Mstar.IR.X86RegisterSet;
 import Mstar.Symbol.*;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Stack;
 
@@ -64,6 +63,7 @@ public class IRBuilder implements IAstVisitor {
     public static VirtualRegister[] vcalleeSaveRegs = new VirtualRegister[7];
     public static VirtualRegister vrax;
     public static VirtualRegister vrdx;
+    public static VirtualRegister vrcx;
     {
         //  parameters, caller save
         vargRegs[0] = new VirtualRegister("rdi", X86RegisterSet.rdi);
@@ -87,6 +87,9 @@ public class IRBuilder implements IAstVisitor {
 
         //  also special for mul, div and mod
         vrdx = vargRegs[2];
+
+        //  also special for sal, sar
+        vrcx = vargRegs[3];
     }
 
     public IRProgram irProgram;
@@ -792,8 +795,8 @@ public class IRBuilder implements IAstVisitor {
             case "%": bop = BinaryInst.BinaryOp.MOD; break;
             case "+": bop = BinaryInst.BinaryOp.ADD; break;
             case "-": bop = BinaryInst.BinaryOp.SUB; break;
-            case ">>": bop = BinaryInst.BinaryOp.SHR; break;
-            case "<<": bop = BinaryInst.BinaryOp.SHL; break;
+            case ">>": bop = BinaryInst.BinaryOp.SAR; break;
+            case "<<": bop = BinaryInst.BinaryOp.SAL; break;
             case "&": bop = BinaryInst.BinaryOp.AND; break;
             case "|": bop = BinaryInst.BinaryOp.OR; break;
             case "^": bop = BinaryInst.BinaryOp.XOR; break;
@@ -806,11 +809,15 @@ public class IRBuilder implements IAstVisitor {
             curBB.append(new Move(curBB, vrax, olhs));
             curBB.append(new Cdq(curBB));
             curBB.append(new BinaryInst(curBB, bop, null, orhs));
-            if(op.equals("/")) {
+            if (op.equals("/")) {
                 curBB.append(new Move(curBB, result, vrax));
             } else {
                 curBB.append(new Move(curBB, result, vrdx));
             }
+        } else if(op.equals("<<") || op.equals(">>")) {
+            curBB.append(new Move(curBB, result, olhs));
+            curBB.append(new Move(curBB, vrcx, orhs));
+            curBB.append(new BinaryInst(curBB, bop, result, vrcx));
         } else {
             curBB.append(new Move(curBB, result, olhs));
             curBB.append(new BinaryInst(curBB, bop, result, orhs));
@@ -904,6 +911,10 @@ public class IRBuilder implements IAstVisitor {
         Operand lvalue = exprResultMap.get(node.lhs);
         assert lvalue instanceof Address;
         assign(node.rhs, (Address)lvalue);
+    }
+
+    @Override
+    public void visit(EmptyStatement node) {
     }
 }
 

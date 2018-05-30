@@ -352,4 +352,7 @@ public class SemanticChecker implements IAstVisitor {
             errorRecorder.addRecord(node.location, "lhs of assign expression is not modifiable");
         node.modifiable = false;
     }
+
+    @Override
+    public void visit(EmptyStatement node) { }
 }
