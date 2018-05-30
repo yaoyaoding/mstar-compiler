@@ -7,20 +7,24 @@ import Mstar.IR.Function;
 import Mstar.IR.IRProgram;
 import Mstar.IR.Instruction.*;
 import Mstar.IR.Operand.*;
+import Mstar.IR.X86RegisterSet;
 import Mstar.Symbol.*;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Stack;
 
 public class IRBuilder implements IAstVisitor {
     private GlobalSymbolTable gst;
+
     private BasicBlock curBB;
     private Stack<BasicBlock> loopConditionBB;
     private Stack<BasicBlock> loopAfterBB;
     private Function curFunction;
     private ClassSymbol curClassSymbol;
     private VirtualRegister curThisPointer;
+
     private HashMap<String,Function> functionMap;
     private HashMap<Expression,BasicBlock> trueBBMap, falseBBMap;
     private HashMap<Expression,Operand> exprResultMap;
@@ -28,19 +32,53 @@ public class IRBuilder implements IAstVisitor {
     private boolean isInClassDeclaration;
 
 
-    private Function library_print;
-    private Function library_println;
-    private Function library_getString;
-    private Function library_getInt;
-    private Function library_toString;
-    private Function library_string_length;
-    private Function library_string_substring;
-    private Function library_string_parseInt;
-    private Function library_string_ord;
-    private Function library_stringConcate;
-    private Function library_stringCompare;
-    private Function external_malloc;
-    private Function library_init;
+    private static Function library_print;
+    private static Function library_println;
+    private static Function library_getString;
+    private static Function library_getInt;
+    private static Function library_toString;
+    private static Function library_string_length;
+    private static Function library_string_substring;
+    private static Function library_string_parseInt;
+    private static Function library_string_ord;
+    private static Function library_stringConcate;
+    private static Function library_stringCompare;
+    private static Function external_malloc;
+    private static Function library_init;
+
+    public IRBuilder(GlobalSymbolTable gst) {
+        this.gst = gst;
+        this.irProgram = new IRProgram();
+        this.loopAfterBB = new Stack<>();
+        this.loopConditionBB = new Stack<>();
+        this.functionMap = new HashMap<>();
+        this.trueBBMap = new HashMap<>();
+        this.falseBBMap = new HashMap<>();
+        this.exprResultMap = new HashMap<>();
+        this.isInParameter = false;
+        this.isInClassDeclaration = false;
+        initLibraryFunctions();
+    }
+
+    public static VirtualRegister[] vargRegs = new VirtualRegister[] {
+            new VirtualRegister("rdi", X86RegisterSet.rdi),
+            new VirtualRegister("rsi", X86RegisterSet.rsi),
+            new VirtualRegister("rdx", X86RegisterSet.rdx),
+            new VirtualRegister("rcx", X86RegisterSet.rcx),
+            new VirtualRegister("r8", X86RegisterSet.r8),
+            new VirtualRegister("r9", X86RegisterSet.r9)
+    };
+    public static VirtualRegister[] vcalleeSaveRegs = new VirtualRegister[] {
+            new VirtualRegister("rbx", X86RegisterSet.rbx),
+            new VirtualRegister("r10", X86RegisterSet.r10 ),
+            new VirtualRegister("r11", X86RegisterSet.r11 ),
+            new VirtualRegister("r12", X86RegisterSet.r12 ),
+            new VirtualRegister("r13", X86RegisterSet.r13 ),
+            new VirtualRegister("r14", X86RegisterSet.r14 ),
+            new VirtualRegister("r15", X86RegisterSet.r15)
+    };
+    public static VirtualRegister vrax = new VirtualRegister("rax", X86RegisterSet.rax);
+    public static VirtualRegister vrdx = vargRegs[2];
 
     public IRProgram irProgram;
 
@@ -72,25 +110,15 @@ public class IRBuilder implements IAstVisitor {
         external_malloc = new Function(Function.Type.External, "malloc");
 
     }
-    public IRBuilder(GlobalSymbolTable gst) {
-        this.gst = gst;
-        this.irProgram = new IRProgram();
-        this.loopAfterBB = new Stack<>();
-        this.loopConditionBB = new Stack<>();
-        this.functionMap = new HashMap<>();
-        this.trueBBMap = new HashMap<>();
-        this.falseBBMap = new HashMap<>();
-        this.exprResultMap = new HashMap<>();
-        this.isInParameter = false;
-        this.isInClassDeclaration = false;
-        initLibraryFunctions();
-    }
 
     private boolean isVoidType(VariableType type) {
         return type instanceof PrimitiveType && ((PrimitiveType) type).name.equals("void");
     }
     private boolean isBoolType(VariableType type) {
         return type instanceof PrimitiveType && ((PrimitiveType) type).name.equals("bool");
+    }
+    private boolean isStringType(VariableType type) {
+        return type instanceof ClassType && ((ClassType) type).name.equals("string");
     }
 
     private void buildInitFunction(AstProgram node) {
@@ -103,14 +131,16 @@ public class IRBuilder implements IAstVisitor {
                 continue;
             assign(vd.init, vd.symbol.virtualRegister.spillPlace);
         }
-        VirtualRegister result = new VirtualRegister("");
-        curBB.append(new Call(curBB, result, functionMap.get("main")));
-        curBB.append(new Return(curBB, result));
+        curBB.append(new Call(curBB, vrax, functionMap.get("main")));
+        curBB.append(new Leave(curBB));
+        curBB.append(new Return(curBB));
         curFunction.leaveBB = curBB;
+        curFunction.finish();
     }
 
     @Override
     public void visit(AstProgram node) {
+        /* allocate VR for global variables */
         for(VariableDeclaration variableDeclaration : node.globalVariables) {
             StaticData data = new StaticData(variableDeclaration.name, Config.REGISTER_WIDTH);
             VirtualRegister vr = new VirtualRegister(variableDeclaration.name);
@@ -118,6 +148,8 @@ public class IRBuilder implements IAstVisitor {
             irProgram.staticData.add(data);
             variableDeclaration.symbol.virtualRegister = vr;
         }
+
+        /* define all functions */
         LinkedList<FuncDeclaration> funcDeclarations = new LinkedList<>();
         funcDeclarations.addAll(node.functions);
         for(ClassDeclaration cd : node.classes) {
@@ -133,12 +165,16 @@ public class IRBuilder implements IAstVisitor {
         for(FuncDeclaration function : node.functions)
             function.accept(this);
         for(ClassDeclaration classDeclaration : node.classes) {
-            curClassSymbol = classDeclaration.symbol;
-            isInClassDeclaration = true;
             classDeclaration.accept(this);
-            isInClassDeclaration = false;
         }
 
+        /* calculate the information inside function by calling finish */
+        for(Function func : functionMap.values()) {
+            if(func.type == Function.Type.UserDefined)
+                func.finish();
+        }
+
+        /* init function used to initialize global variables */
         buildInitFunction(node);
     }
 
@@ -148,29 +184,79 @@ public class IRBuilder implements IAstVisitor {
     }
 
     @Override
+    public void visit(ClassDeclaration node) {
+        curClassSymbol = node.symbol;
+        isInClassDeclaration = true;
+        if(node.constructor != null)
+            node.constructor.accept(this);
+        for(FuncDeclaration func : node.methods)
+            func.accept(this);
+        isInClassDeclaration = false;
+    }
+
+    @Override
     public void visit(FuncDeclaration node) {
         curFunction = functionMap.get(node.symbol.name);
         curBB = curFunction.enterBB = new BasicBlock(curFunction, "enter");
-        isInParameter = true;
-        if(isInClassDeclaration)
-            curFunction.parameters.add(new VirtualRegister("this"));
-        for(VariableDeclaration vd : node.parameters) {
-            vd.accept(this);
-        }
-        isInParameter = false;
+
+        /******
+         *  Processes in a function:
+         *  1. save callee-save registers
+         *  2. save arguments in physical registers to virtual registers
+         *  3. load global variables in memory to virtual registers
+         *  4. function body
+         *  5. load callee-save registers
+         */
+
+        /* declare virtual registers for parameters */
         if(isInClassDeclaration) {
-            curThisPointer = curFunction.parameters.get(0);
+            VirtualRegister vthis = new VirtualRegister("");
+            curFunction.parameters.add(vthis);
+            curThisPointer = vthis;
         }
+        isInParameter = true;
+        for(VariableDeclaration vd : node.parameters)
+            vd.accept(this);
+        isInParameter = false;
+
+        /* backup callee save registers */
+        LinkedList<VirtualRegister> calleeSaveRegisterBackup = new LinkedList<>();
+        if(!Config.useNaiveAllocator) {
+            for (int i = 0; i < vcalleeSaveRegs.length; i++) {
+                VirtualRegister vr = new VirtualRegister("");
+                curBB.append(new Move(curBB, vr, vcalleeSaveRegs[i]));
+                calleeSaveRegisterBackup.add(vr);
+            }
+        }
+
+        /* copy the arguments in physical registers and memory to virtual registers */
+        for(int i = 0; i < curFunction.parameters.size(); i++) {
+            if(i < 6) {
+                curBB.append(new Move(curBB, curFunction.parameters.get(i), vargRegs[i]));
+            } else {
+                curBB.append(new Move(curBB, curFunction.parameters.get(i), curFunction.parameters.get(i).spillPlace));
+            }
+        }
+
+        /* load global variable at first */
+        for(VariableSymbol vr : node.symbol.usedGlobalVariables) {
+            curBB.append(new Move(curBB, vr.virtualRegister, vr.virtualRegister.spillPlace));
+        }
+
+
+        /* add default return */
         for(Statement statement : node.body)
             statement.accept(this);
         if(!(curBB.tail instanceof Return)) {
             if(isVoidType(node.symbol.returnType)) {
-                curBB.append(new Return(curBB, null));
+                curBB.append(new Return(curBB));
             } else {
-                curBB.append(new Return(curBB, new Immediate(0)));
+                curBB.append(new Move(curBB, vrax, new Immediate(0)));
+                curBB.append(new Return(curBB));
             }
         }
 
+        /* gather all return instructions to one */
         LinkedList<Return> returnInsts = new LinkedList<>();
         for(BasicBlock bb : curFunction.basicblocks) {
             for(IRInstruction inst = bb.head; inst != null; inst = inst.next) {
@@ -178,33 +264,30 @@ public class IRBuilder implements IAstVisitor {
                     returnInsts.add((Return) inst);
             }
         }
-
         if(returnInsts.size() > 1) {
-            boolean hasReturnValue = returnInsts.get(0).src != null;
-            VirtualRegister vr = new VirtualRegister("return_value");
-            BasicBlock leaveBB = new BasicBlock(curFunction, "leave");
+            BasicBlock leaveBB = new BasicBlock(curFunction, "leaveBB");
             for(Return retInst : returnInsts) {
-                if(hasReturnValue)
-                    retInst.prepend(new Move(retInst.bb, vr, retInst.src));
                 retInst.prepend(new Jump(retInst.bb, leaveBB));
                 retInst.remove();
             }
-            leaveBB.append(new Return(leaveBB, hasReturnValue ? vr : null));
+            leaveBB.append(new Return(leaveBB));
             curFunction.leaveBB = leaveBB;
         } else {
             curFunction.leaveBB = curBB;
         }
 
+        /* resume callee save registers*/
+        IRInstruction retInst = curFunction.leaveBB.tail;
+        if(!Config.useNaiveAllocator) {
+            for (int i = 0; i < vcalleeSaveRegs.length; i++)
+                retInst.prepend(new Move(retInst.bb, vcalleeSaveRegs[i], calleeSaveRegisterBackup.get(i)));
+        }
+
+        /* add leave instruction */
+        retInst.prepend(new Leave(retInst.bb));
+
         functionMap.put(node.symbol.name,curFunction);
         irProgram.functions.add(curFunction);
-    }
-
-    @Override
-    public void visit(ClassDeclaration node) {
-        if(node.constructor != null)
-            node.constructor.accept(this);
-        for(FuncDeclaration func : node.methods)
-            func.accept(this);
     }
 
     private void boolAssign(Expression expr, Address vr) {
@@ -237,7 +320,6 @@ public class IRBuilder implements IAstVisitor {
         VirtualRegister vr = new VirtualRegister(node.name);
         if(isInParameter)
             curFunction.parameters.add(vr);
-        vr.spillPlace = new StackSlot(node.name);
         node.symbol.virtualRegister = vr;
         if(node.init != null) {
             assign(node.init, vr);
@@ -282,7 +364,6 @@ public class IRBuilder implements IAstVisitor {
         loopConditionBB.push(condBB);
         loopAfterBB.push(afterBB);
         if(node.condition != null) {
-            assert isBoolType(node.condition.type);
             trueBBMap.put(node.condition, bodyBB);
             falseBBMap.put(node.condition, afterBB);
             curBB = condBB;
@@ -310,7 +391,6 @@ public class IRBuilder implements IAstVisitor {
         loopConditionBB.push(condBB);
         loopAfterBB.push(afterBB);
         curBB = condBB;
-        assert isBoolType(node.condition.type);
         trueBBMap.put(node.condition, bodyBB);
         falseBBMap.put(node.condition, afterBB);
         node.condition.accept(this);
@@ -356,15 +436,15 @@ public class IRBuilder implements IAstVisitor {
     public void visit(ReturnStatement node) {
         if(node.retExpression != null) {
             if(isBoolType(node.retExpression.type)) {
-                VirtualRegister vr = new VirtualRegister("single_ret");
-                boolAssign(node.retExpression, vr);
-                curBB.append(new Return(curBB, vr));
+                boolAssign(node.retExpression, vrax);
+                curBB.append(new Return(curBB));
             } else {
                 node.retExpression.accept(this);
-                curBB.append(new Return(curBB, exprResultMap.get(node.retExpression)));
+                curBB.append(new Move(curBB, vrax, exprResultMap.get(node.retExpression)));
+                curBB.append(new Return(curBB));
             }
         } else {
-            curBB.append(new Return(curBB, null));
+            curBB.append(new Return(curBB));
         }
     }
 
@@ -392,9 +472,9 @@ public class IRBuilder implements IAstVisitor {
     @Override
     public void visit(Identifier node) {
         Operand operand;
-        if(node.name.equals("this")) {
+        if(node.name.equals("this")) {  //  this pointer
             operand = curThisPointer;
-        } else if(node.symbol.isClassField) {
+        } else if(node.symbol.isClassField) {   //  this.xxx
             String fieldName = node.name;
             int offset = curClassSymbol.classSymbolTable.getVariableOffset(fieldName);
             operand = new Memory(curThisPointer, new Immediate(offset));
@@ -428,7 +508,6 @@ public class IRBuilder implements IAstVisitor {
                 StaticData sd = new StaticData("static_string", node.value.substring(1, node.value.length()-1));
                 irProgram.staticData.add(sd);
                 operand = sd;
-//                operand = new Memory(sd);
             }
         }
         exprResultMap.put(node, operand);
@@ -470,25 +549,21 @@ public class IRBuilder implements IAstVisitor {
 
     @Override
     public void visit(FuncCallExpression node) {
-        VirtualRegister dest;
-        LinkedList<Operand> args = new LinkedList<>();
-        if(isVoidType(node.functionSymbol.returnType)) {
-            dest = null;
-        } else {
-            dest = new VirtualRegister("call_ret");
-        }
-
-        for(Expression e : node.arguments) {
+        LinkedList<Operand> arguments = new LinkedList<>();
+        for(int i = 0; i < node.arguments.size(); i++) {
+            Expression e = node.arguments.get(i);
             e.accept(this);
-            Operand arg = exprResultMap.get(e);
-            args.add(arg);
+            arguments.add(exprResultMap.get(e));
         }
-
-        curBB.append(new Call(curBB, dest, functionMap.get(node.functionSymbol.name), args));
+        curBB.append(new Call(curBB, vrax, functionMap.get(node.functionSymbol.name), arguments));
         if(trueBBMap.containsKey(node)) {
-            curBB.append(new CJump(curBB, dest, CJump.CompareOp.NE, new Immediate(0), trueBBMap.get(node), falseBBMap.get(node)));
+            curBB.append(new CJump(curBB, vrax, CJump.CompareOp.NE, new Immediate(0), trueBBMap.get(node), falseBBMap.get(node)));
         } else {
-            exprResultMap.put(node, dest);
+            if(!isVoidType(node.functionSymbol.returnType)) {
+                VirtualRegister vr = new VirtualRegister("");
+                curBB.append(new Move(curBB, vr, vrax));
+                exprResultMap.put(node, vr);
+            }
         }
     }
 
@@ -498,10 +573,11 @@ public class IRBuilder implements IAstVisitor {
                 return new Immediate(0);
             } else {
                 VirtualRegister retAddr = new VirtualRegister("");
-                curBB.append(new Call(curBB, retAddr, external_malloc, new Immediate(baseBytes)));
-                if(constructor != null)
-                    curBB.append(new Call(curBB, null, constructor, retAddr));
-                else {
+                curBB.append(new Call(curBB, vrax, external_malloc, new Immediate(baseBytes)));
+                curBB.append(new Move(curBB, retAddr, vrax));
+                if(constructor != null) {
+                    curBB.append(new Call(curBB, vrax, constructor, retAddr));
+                } else {
                     if(baseBytes == Config.REGISTER_WIDTH) {
                         curBB.append(new Move(curBB, new Memory(retAddr), new Immediate(0)));
                     } else if(baseBytes == Config.REGISTER_WIDTH * 2) {  //  maybe string
@@ -518,7 +594,8 @@ public class IRBuilder implements IAstVisitor {
             VirtualRegister bytes = new VirtualRegister("");
             curBB.append(new Move(curBB, size, dims.get(0)));
             curBB.append(new Lea(curBB, bytes, new Memory(size, Config.REGISTER_WIDTH, new Immediate(Config.REGISTER_WIDTH))));
-            curBB.append(new Call(curBB, addr, external_malloc, bytes));
+            curBB.append(new Call(curBB, vrax, external_malloc, bytes));
+            curBB.append(new Move(curBB, addr, vrax));
             curBB.append(new Move(curBB, new Memory(addr), size));
             BasicBlock condBB = new BasicBlock(curFunction, "allocateCondBB");
             BasicBlock bodyBB = new BasicBlock(curFunction, "allocateBodyBB");
@@ -607,9 +684,14 @@ public class IRBuilder implements IAstVisitor {
                     Operand arg = exprResultMap.get(expression);
                     arguments.add(arg);
                 }
-                VirtualRegister retValue = isVoidType(node.methodCall.functionSymbol.returnType) ? null : new VirtualRegister("");
-                curBB.append(new Call(curBB, retValue, function, arguments));
-                operand = retValue;
+                curBB.append(new Call(curBB, vrax, function, arguments));
+                if(!isVoidType(node.methodCall.functionSymbol.returnType)) {
+                    VirtualRegister retValue = new VirtualRegister("");
+                    curBB.append(new Move(curBB, retValue, vrax));
+                    operand = retValue;
+                } else {
+                    operand = null;
+                }
             }
             if(trueBBMap.containsKey(node)) {
                 curBB.append(new CJump(curBB, operand, CJump.CompareOp.NE, new Immediate(0), trueBBMap.get(node), falseBBMap.get(node)));
@@ -669,7 +751,7 @@ public class IRBuilder implements IAstVisitor {
         Operand olhs = exprResultMap.get(lhs);
         Operand orhs = exprResultMap.get(rhs);
         VirtualRegister result = new VirtualRegister("");
-        if(op.equals("+") && lhs.type instanceof ClassType) {
+        if(op.equals("+") && isStringType(lhs.type)) {
             VirtualRegister vr;
             if(olhs instanceof Memory && !(olhs instanceof StackSlot)) {
                 vr = new VirtualRegister("");
@@ -681,7 +763,8 @@ public class IRBuilder implements IAstVisitor {
                 curBB.append(new Move(curBB, vr, orhs));
                 orhs = vr;
             }
-            curBB.append(new Call(curBB, result, library_stringConcate, olhs, orhs));
+            curBB.append(new Call(curBB, vrax, library_stringConcate, olhs, orhs));
+            curBB.append(new Move(curBB, result, vrax));
             return result;
         }
 
@@ -698,16 +781,23 @@ public class IRBuilder implements IAstVisitor {
             case "|": bop = BinaryInst.BinaryOp.OR; break;
             case "^": bop = BinaryInst.BinaryOp.XOR; break;
         }
-        curBB.append(new Move(curBB, result, olhs));
-        if((op.equals("*") || op.equals("/") || op.equals("%")) && !(orhs instanceof Register)) {
-            /*
-                TODO: to implement a optimization here
-             */
-            VirtualRegister vr = new VirtualRegister("");
-            curBB.append(new Move(curBB, vr, orhs));
-            orhs = vr;
+        if(op.equals("*")) {
+            curBB.append(new Move(curBB, vrax, olhs));
+            curBB.append(new BinaryInst(curBB, bop, null, orhs));
+            curBB.append(new Move(curBB, result, vrax));
+        } else if(op.equals("/") || op.equals("%")) {
+            curBB.append(new Move(curBB, vrax, olhs));
+            curBB.append(new Cdq(curBB));
+            curBB.append(new BinaryInst(curBB, bop, null, orhs));
+            if(op.equals("/")) {
+                curBB.append(new Move(curBB, result, vrax));
+            } else {
+                curBB.append(new Move(curBB, result, vrdx));
+            }
+        } else {
+            curBB.append(new Move(curBB, result, olhs));
+            curBB.append(new BinaryInst(curBB, bop, result, orhs));
         }
-        curBB.append(new BinaryInst(curBB, bop, result, orhs));
         return result;
     }
     private void doLogicalBinary(String op, Expression lhs, Expression rhs, BasicBlock trueBB, BasicBlock falseBB) {
@@ -742,7 +832,8 @@ public class IRBuilder implements IAstVisitor {
         }
         if(lhs.type instanceof ClassType && ((ClassType) lhs.type).name.equals("string")) { //  str (<|<=|>|>=|==|!=) str
             VirtualRegister scr = new VirtualRegister("");
-            curBB.append(new Call(curBB, scr, library_stringCompare, olhs, orhs));
+            curBB.append(new Call(curBB, vrax, library_stringCompare, olhs, orhs));
+            curBB.append(new Move(curBB, scr, vrax));
             curBB.append(new CJump(curBB, scr, cop, new Immediate(0), trueBB, falseBB));
         } else {
             if(olhs instanceof Memory && orhs instanceof Memory) {
