@@ -165,12 +165,15 @@ public class IRCorrector implements IIRVisitor {
         for(VariableSymbol vs : callerUsed) {
             if(calleeUsed.contains(vs)) {
                 inst.prepend(new Move(inst.bb, vs.virtualRegister.spillPlace, vs.virtualRegister));
+                inst.prev.accept(this);
             }
         }
         while(inst.args.size() > 6)
             inst.prepend(new Push(inst.bb, inst.args.removeLast()));
-        for(int i = inst.args.size() - 1; i >= 0; i--)
+        for(int i = inst.args.size() - 1; i >= 0; i--) {
             inst.prepend(new Move(inst.bb, IRBuilder.vargRegs[i], inst.args.get(i)));
+            inst.prev.accept(this);
+        }
         inst.args.clear();
         for(VariableSymbol vs : callerUsed) {
             if(calleeUsed.contains(vs)) {

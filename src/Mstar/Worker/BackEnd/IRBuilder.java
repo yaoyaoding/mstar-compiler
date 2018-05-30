@@ -61,16 +61,19 @@ public class IRBuilder implements IAstVisitor {
     }
 
     public static VirtualRegister[] vargRegs = new VirtualRegister[6];
+    public static VirtualRegister[] vcalleeSaveRegs = new VirtualRegister[7];
+    public static VirtualRegister vrax;
+    public static VirtualRegister vrdx;
     {
+        //  parameters, caller save
         vargRegs[0] = new VirtualRegister("rdi", X86RegisterSet.rdi);
         vargRegs[1] = new VirtualRegister("rsi", X86RegisterSet.rsi);
         vargRegs[2] = new VirtualRegister("rdx", X86RegisterSet.rdx);
         vargRegs[3] = new VirtualRegister("rcx", X86RegisterSet.rcx);
         vargRegs[4] = new VirtualRegister("r8", X86RegisterSet.r8);
         vargRegs[5] = new VirtualRegister("r9", X86RegisterSet.r9);
-    };
-    public static VirtualRegister[] vcalleeSaveRegs = new VirtualRegister[7];
-    {
+
+        //  callee save
         vcalleeSaveRegs[0] = new VirtualRegister("rbx", X86RegisterSet.rbx);
         vcalleeSaveRegs[1] = new VirtualRegister("r10", X86RegisterSet.r10 );
         vcalleeSaveRegs[2] = new VirtualRegister("r11", X86RegisterSet.r11 );
@@ -78,9 +81,13 @@ public class IRBuilder implements IAstVisitor {
         vcalleeSaveRegs[4] = new VirtualRegister("r13", X86RegisterSet.r13 );
         vcalleeSaveRegs[5] = new VirtualRegister("r14", X86RegisterSet.r14 );
         vcalleeSaveRegs[6] = new VirtualRegister("r15", X86RegisterSet.r15);
-    };
-    public static VirtualRegister vrax = new VirtualRegister("rax", X86RegisterSet.rax);
-    public static VirtualRegister vrdx = vargRegs[2];
+
+        //  ret value
+        vrax = new VirtualRegister("rax", X86RegisterSet.rax);
+
+        //  also special for mul, div and mod
+        vrdx = vargRegs[2];
+    }
 
     public IRProgram irProgram;
 
