@@ -40,7 +40,10 @@ public class Memory extends Address {
     }
 
     public Memory copy() {
-        return new Memory(base, index, scale, constant);
+        if(this instanceof StackSlot)
+            return this;
+        else
+            return new Memory(base, index, scale, constant);
     }
 
     public LinkedList<Register> getUseRegs() {

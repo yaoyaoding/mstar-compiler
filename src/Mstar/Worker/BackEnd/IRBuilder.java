@@ -327,8 +327,11 @@ public class IRBuilder implements IAstVisitor {
         /*process the non-global variable*/
         assert curFunction != null;
         VirtualRegister vr = new VirtualRegister(node.name);
-        if(isInParameter)
+        if(isInParameter) {
+            if(curFunction.parameters.size() >= 6)
+                vr.spillPlace = new StackSlot(vr.hint);
             curFunction.parameters.add(vr);
+        }
         node.symbol.virtualRegister = vr;
         if(node.init != null) {
             assign(node.init, vr);
