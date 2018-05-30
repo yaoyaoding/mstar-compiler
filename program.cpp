@@ -1,31 +1,170 @@
-int a(int a1, int a2, int a3, int a4, int a5, int a6, int a7, int a8, int a9, int a10, int a11, int a12, int a13, int a14, int a15)
-{
-    return a1 + a2 + a3 + a4 + a5 + a6 + a7 + a8 + a9 + a10 + a11 + a12 + a13 + a14 + a15;
+//
+// Naive vector class for Mx*.
+// Without any guarantee for robustness.
+//
+class vector{
+	int[] data;
+	void init(int[] vec){
+		// init the vector from an array
+		if (vec == null) return;
+		data = new int[vec.size()];
+		int i;
+		for (i = 0; i < vec.size(); ++i)
+		{
+			data[i] = vec[i];
+		}
+	}
+
+	int getDim(){
+		if (data == null) return 0;
+		return data.size();
+	}
+
+	int dot(vector rhs){
+		int i = 0;
+		int result = 0;
+		while(i < getDim()){
+			//result = data[i] * rhs[i];
+			result = data[i] * rhs.data[i];
+			++i;
+		}
+		return result;
+	}
+
+	vector scalarInPlaceMultiply(int c){
+		if (data == null) return null;
+		int i;
+		for (i = 0; i < getDim(); ++i) {
+			this.data[i] = c * this.data[i];
+		}
+		return this;
+	}
+
+	vector add(vector rhs){
+		if (getDim() != rhs.getDim() || getDim() == 0)
+			return null;
+		vector temp = new vector;
+		int i;
+		temp.data = new int[getDim()];
+		for (i = 0; i < getDim(); ++i){
+			temp.data[i] = data[i] + rhs.data[i];
+		}
+		return temp;
+	}
+
+	bool set(int idx, int value){
+		if (getDim() < idx) return false;
+		data[idx] = value;
+		return true;
+	}
+
+	string tostring(){
+		string temp = "( ";
+		if (getDim() > 0) {
+			temp = temp + toString(data[0]);
+		}
+		int i;
+		for (i = 1; i < getDim(); ++i) {
+			temp = temp + ", " + toString(data[i]);
+		}
+		temp = temp + " )";
+		return temp;
+	}
+
+	bool copy(vector rhs){
+		if (rhs == null) return false;
+		if (rhs.getDim() == 0) {
+			data = null;
+		} else {
+			data = new int[rhs.getDim()];
+			int i;
+			for (i = 0; i < getDim(); ++i) {
+				data[i] = rhs.data[i];
+			}
+		}
+		return true;
+	}
 }
 
-int main()
-{
-    println(toString(a(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)));
-    return 0;
+int main(){
+	vector x = new vector;
+	int[] a = new int[10];
+	int i;
+	for (i = 0; i < 10; ++i){
+		a[i] = 9 - i;
+	}
+	x.init(a);
+	print("vector x: ");
+	println(x.tostring());
+
+	vector y = new vector;
+	y.copy(x);
+	if (y.set(3, 817)){
+		println("excited!");
+	}
+	print("vector y: ");
+	println(y.tostring());
+	print("x + y: ");
+	println((x.add(y)).tostring());
+	print("x * y: ");
+	println(toString(x.dot(y)));
+	print("(1 << 3) * y: ");
+	println(y.scalarInPlaceMultiply(1 << 3).tostring());
+	return 0;
 }
 
 
 
 /*!! metadata:
 === comment ===
-manyarguments-5100379110-daibo.mx
-=== input ===
-
+vector-5140519064-youyurong.txtNaive vector class for Mx*.Without any guarantee for robustness.
+=== is_public ===
+True
 === assert ===
 output
 === timeout ===
 0.1
-=== output ===
-120
+=== input ===
+
 === phase ===
-codegen pretest
-=== is_public ===
-True
+codegen extended
+=== output ===
+vector x: ( 9, 8, 7, 6, 5, 4, 3, 2, 1, 0 )
+excited!
+vector y: ( 9, 8, 7, 817, 5, 4, 3, 2, 1, 0 )
+x + y: ( 18, 16, 14, 823, 10, 8, 6, 4, 2, 0 )
+x * y: 0
+(1 << 3) * y: ( 72, 64, 56, 6536, 40, 32, 24, 16, 8, 0 )
+=== exitcode ===
+
 
 !!*/
 
+
+/*
+int a;
+int b;
+int c;
+int s = 0;
+
+void ua() {
+    a = 3;
+    s = s + a;
+}
+void ub() {
+    b = 3;
+    s = s + b;
+}
+void uc() {
+    c = 3;
+    s = s + c;
+}
+int main() {
+    a = 0;
+    b = 1;
+    c = 2;
+    ua();
+    ub();
+    uc();
+}
+*/

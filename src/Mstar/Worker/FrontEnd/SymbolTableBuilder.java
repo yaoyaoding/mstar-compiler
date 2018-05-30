@@ -152,6 +152,7 @@ public class SymbolTableBuilder implements IAstVisitor {
         }
         FunctionSymbol symbol = new FunctionSymbol();
         symbol.name = (classSymbol == null ? "" : classSymbol.name + ".") + funcDeclaration.name;
+        symbol.isGlobalFunction = (classSymbol == null);
         symbol.location = funcDeclaration.location;
         symbol.returnType = resolveVariableType(funcDeclaration.retTypeNode);
         if(symbol.returnType == null)

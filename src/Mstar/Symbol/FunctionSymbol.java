@@ -15,6 +15,7 @@ public class FunctionSymbol {
     public List<String> parameterNames;
     public SymbolTable functionSymbolTable;
     public HashSet<VariableSymbol> usedGlobalVariables;
+    public boolean isGlobalFunction;
 
     public FunctionSymbol() {
         this.parameterTypes = new LinkedList<>();

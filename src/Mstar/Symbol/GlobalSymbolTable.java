@@ -41,6 +41,7 @@ public class GlobalSymbolTable extends SymbolTable {
     private FunctionSymbol stringLength() {
         FunctionSymbol f = new FunctionSymbol();
         f.name = "string.length";
+        f.isGlobalFunction = true;
         f.location = new TokenLocation(0, 0);
         f.parameterTypes.add(stringType());
         f.parameterNames.add("this");
@@ -50,6 +51,7 @@ public class GlobalSymbolTable extends SymbolTable {
     private FunctionSymbol stringSubstring() {
         FunctionSymbol f = new FunctionSymbol();
         f.name = "string.substring";
+        f.isGlobalFunction = true;
         f.returnType = stringType();
         f.location = new TokenLocation(0, 0);
         f.parameterTypes.add(stringType());
@@ -63,6 +65,7 @@ public class GlobalSymbolTable extends SymbolTable {
     private FunctionSymbol stringParseInt() {
         FunctionSymbol f = new FunctionSymbol();
         f.name = "string.parseInt";
+        f.isGlobalFunction = true;
         f.location = new TokenLocation(0, 0);
         f.returnType = intType();
         f.parameterTypes.add(stringType());
@@ -72,6 +75,7 @@ public class GlobalSymbolTable extends SymbolTable {
     private FunctionSymbol stringOrd() {
         FunctionSymbol f = new FunctionSymbol();
         f.name = "string.ord";
+        f.isGlobalFunction = true;
         f.location = new TokenLocation(0, 0);
         f.returnType = intType();
         f.parameterTypes.add(stringType());
@@ -83,6 +87,7 @@ public class GlobalSymbolTable extends SymbolTable {
     private FunctionSymbol globalPrint() {
         FunctionSymbol f = new FunctionSymbol();
         f.name = "print";
+        f.isGlobalFunction = true;
         f.returnType = voidType();
         f.location = new TokenLocation(0, 0);
         f.parameterTypes.add(stringType());
@@ -92,6 +97,7 @@ public class GlobalSymbolTable extends SymbolTable {
     private FunctionSymbol globalPrintln() {
         FunctionSymbol f = new FunctionSymbol();
         f.name = "println";
+        f.isGlobalFunction = true;
         f.returnType = voidType();
         f.location = new TokenLocation(0 ,0);
         f.parameterTypes.add(stringType());
@@ -101,6 +107,7 @@ public class GlobalSymbolTable extends SymbolTable {
     private FunctionSymbol globalGetString() {
         FunctionSymbol f = new FunctionSymbol();
         f.name = "getString";
+        f.isGlobalFunction = true;
         f.returnType = stringType();
         f.location = new TokenLocation(0, 0);
         return f;
@@ -108,6 +115,7 @@ public class GlobalSymbolTable extends SymbolTable {
     private FunctionSymbol globalGetInt() {
         FunctionSymbol f = new FunctionSymbol();
         f.name = "getInt";
+        f.isGlobalFunction = true;
         f.returnType = intType();
         f.location = new TokenLocation(0, 0);
         return f;
@@ -115,6 +123,7 @@ public class GlobalSymbolTable extends SymbolTable {
     private FunctionSymbol globalToString() {
         FunctionSymbol f = new FunctionSymbol();
         f.name = "toString";
+        f.isGlobalFunction = true;
         f.returnType = stringType();
         f.location = new TokenLocation(0, 0);
         f.parameterTypes.add(intType());

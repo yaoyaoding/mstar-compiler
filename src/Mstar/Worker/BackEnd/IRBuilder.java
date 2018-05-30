@@ -492,6 +492,9 @@ public class IRBuilder implements IAstVisitor {
             operand = new Memory(curThisPointer, new Immediate(offset));
         } else {
             operand = node.symbol.virtualRegister;
+            if(node.symbol.isGlobalVariable) {
+                curFunction.usedGlobalVariables.add(node.symbol);
+            }
         }
         if (trueBBMap.containsKey(node)) {
             curBB.append(new CJump(curBB, operand, CJump.CompareOp.NE,
@@ -562,6 +565,8 @@ public class IRBuilder implements IAstVisitor {
     @Override
     public void visit(FuncCallExpression node) {
         LinkedList<Operand> arguments = new LinkedList<>();
+        if(!node.functionSymbol.isGlobalFunction)
+            arguments.add(curThisPointer);
         for(int i = 0; i < node.arguments.size(); i++) {
             Expression e = node.arguments.get(i);
             e.accept(this);
