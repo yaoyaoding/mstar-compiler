@@ -27,6 +27,7 @@ public class IRBuilder implements IAstVisitor {
     private HashMap<String,Function> functionMap;
     private HashMap<Expression,BasicBlock> trueBBMap, falseBBMap;
     private HashMap<Expression,Operand> exprResultMap;
+    private HashMap<Expression,Address> assignToMap;
     private boolean isInParameter;
     private boolean isInClassDeclaration;
 
@@ -54,6 +55,7 @@ public class IRBuilder implements IAstVisitor {
         this.trueBBMap = new HashMap<>();
         this.falseBBMap = new HashMap<>();
         this.exprResultMap = new HashMap<>();
+        this.assignToMap = new HashMap<>();
         this.isInParameter = false;
         this.isInClassDeclaration = false;
         initLibraryFunctions();
@@ -217,7 +219,8 @@ public class IRBuilder implements IAstVisitor {
          *  2. save arguments in physical registers to virtual registers
          *  3. load global variables in memory to virtual registers
          *  4. function body
-         *  5. load callee-save registers
+         *  5. save global variables in virtual registers to memory
+         *  6. load callee-save registers
          */
 
         /* declare virtual registers for parameters */
@@ -288,8 +291,13 @@ public class IRBuilder implements IAstVisitor {
             curFunction.leaveBB = curBB;
         }
 
-        /* resume callee save registers*/
+        /* save global variable */
         IRInstruction retInst = curFunction.leaveBB.tail;
+        for(VariableSymbol vr : node.symbol.usedGlobalVariables) {
+            retInst.prepend(new Move(retInst.bb, vr.virtualRegister.spillPlace, vr.virtualRegister));
+        }
+
+        /* resume callee save registers*/
         if(!Config.useNaiveAllocator) {
             for (int i = 0; i < vcalleeSaveRegs.length; i++)
                 retInst.prepend(new Move(retInst.bb, vcalleeSaveRegs[i], calleeSaveRegisterBackup.get(i)));
@@ -320,8 +328,11 @@ public class IRBuilder implements IAstVisitor {
         if(isBoolType(expr.type))
             boolAssign(expr, vr);
         else {
+            assignToMap.put(expr, vr);
             expr.accept(this);
-            curBB.append(new Move(curBB, vr, exprResultMap.get(expr)));
+            Operand result = exprResultMap.get(expr);
+            if(result != vr)
+                curBB.append(new Move(curBB, vr, result));
         }
     }
 
@@ -764,63 +775,87 @@ public class IRBuilder implements IAstVisitor {
         }
     }
 
-
-    private Operand doArithmeticBinary(String op, Expression lhs, Expression rhs) {
+    private Operand doStringConcate(Expression lhs, Expression rhs) {
+        Address result = new VirtualRegister("");
         lhs.accept(this);
         rhs.accept(this);
         Operand olhs = exprResultMap.get(lhs);
         Operand orhs = exprResultMap.get(rhs);
-        VirtualRegister result = new VirtualRegister("");
-        if(op.equals("+") && isStringType(lhs.type)) {
-            VirtualRegister vr;
-            if(olhs instanceof Memory && !(olhs instanceof StackSlot)) {
-                vr = new VirtualRegister("");
-                curBB.append(new Move(curBB, vr, olhs));
-                olhs = vr;
-            }
-            if(orhs instanceof Memory && !(orhs instanceof StackSlot)) {
-                vr = new VirtualRegister("");
-                curBB.append(new Move(curBB, vr, orhs));
-                orhs = vr;
-            }
-            curBB.append(new Call(curBB, vrax, library_stringConcate, olhs, orhs));
-            curBB.append(new Move(curBB, result, vrax));
-            return result;
+        VirtualRegister vr;
+        if(olhs instanceof Memory && !(olhs instanceof StackSlot)) {
+            vr = new VirtualRegister("");
+            curBB.append(new Move(curBB, vr, olhs));
+            olhs = vr;
         }
+        if(orhs instanceof Memory && !(orhs instanceof StackSlot)) {
+            vr = new VirtualRegister("");
+            curBB.append(new Move(curBB, vr, orhs));
+            orhs = vr;
+        }
+        curBB.append(new Call(curBB, vrax, library_stringConcate, olhs, orhs));
+        curBB.append(new Move(curBB, result, vrax));
+        return result;
+    }
 
+    private Operand doArithmeticBinary(String op, Address dest, Expression lhs, Expression rhs) {
         BinaryInst.BinaryOp bop = null;
+        boolean isSpecial = false;
+        boolean isRevertable = false;
         switch(op) {
-            case "*": bop = BinaryInst.BinaryOp.MUL; break;
-            case "/": bop = BinaryInst.BinaryOp.DIV; break;
-            case "%": bop = BinaryInst.BinaryOp.MOD; break;
-            case "+": bop = BinaryInst.BinaryOp.ADD; break;
+            case "*": bop = BinaryInst.BinaryOp.MUL; isSpecial = true; break;
+            case "/": bop = BinaryInst.BinaryOp.DIV; isSpecial = true; break;
+            case "%": bop = BinaryInst.BinaryOp.MOD; isSpecial = true; break;
+            case "+": bop = BinaryInst.BinaryOp.ADD; isRevertable = true; break;
             case "-": bop = BinaryInst.BinaryOp.SUB; break;
             case ">>": bop = BinaryInst.BinaryOp.SAR; break;
             case "<<": bop = BinaryInst.BinaryOp.SAL; break;
-            case "&": bop = BinaryInst.BinaryOp.AND; break;
-            case "|": bop = BinaryInst.BinaryOp.OR; break;
-            case "^": bop = BinaryInst.BinaryOp.XOR; break;
+            case "&": bop = BinaryInst.BinaryOp.AND; isRevertable = true; break;
+            case "|": bop = BinaryInst.BinaryOp.OR; isRevertable = true; break;
+            case "^": bop = BinaryInst.BinaryOp.XOR; isRevertable = true; break;
         }
-        if(op.equals("*")) {
-            curBB.append(new Move(curBB, vrax, olhs));
-            curBB.append(new BinaryInst(curBB, bop, null, orhs));
-            curBB.append(new Move(curBB, result, vrax));
-        } else if(op.equals("/") || op.equals("%")) {
-            curBB.append(new Move(curBB, vrax, olhs));
-            curBB.append(new Cdq(curBB));
-            curBB.append(new BinaryInst(curBB, bop, null, orhs));
-            if (op.equals("/")) {
-                curBB.append(new Move(curBB, result, vrax));
+        lhs.accept(this);
+        rhs.accept(this);
+        Operand olhs = exprResultMap.get(lhs);
+        Operand orhs = exprResultMap.get(rhs);
+        Address result = new VirtualRegister("");
+
+        if(!isSpecial) {
+            if(olhs == dest) {
+                result = dest;
+                if(op.equals("<<") || op.equals(">>")) {
+                    curBB.append(new Move(curBB, vrcx, orhs));
+                    curBB.append(new BinaryInst(curBB, bop, result, vrcx));
+                } else {
+                    curBB.append(new BinaryInst(curBB, bop, result, orhs));
+                }
+            } else if(isRevertable && orhs == dest) {
+                result = dest;
+                curBB.append(new BinaryInst(curBB, bop, result, olhs));
             } else {
-                curBB.append(new Move(curBB, result, vrdx));
+                if(op.equals("<<") || op.equals(">>")) {
+                    curBB.append(new Move(curBB, result, olhs));
+                    curBB.append(new Move(curBB, vrcx, orhs));
+                    curBB.append(new BinaryInst(curBB, bop, result, vrcx));
+                } else {
+                    curBB.append(new Move(curBB, result, olhs));
+                    curBB.append(new BinaryInst(curBB, bop, result, orhs));
+                }
             }
-        } else if(op.equals("<<") || op.equals(">>")) {
-            curBB.append(new Move(curBB, result, olhs));
-            curBB.append(new Move(curBB, vrcx, orhs));
-            curBB.append(new BinaryInst(curBB, bop, result, vrcx));
         } else {
-            curBB.append(new Move(curBB, result, olhs));
-            curBB.append(new BinaryInst(curBB, bop, result, orhs));
+            if (op.equals("*")) {
+                curBB.append(new Move(curBB, vrax, olhs));
+                curBB.append(new BinaryInst(curBB, bop, null, orhs));
+                curBB.append(new Move(curBB, result, vrax));
+            } else {    //  op.equals("/") || op.equals("%")
+                curBB.append(new Move(curBB, vrax, olhs));
+                curBB.append(new Cdq(curBB));
+                curBB.append(new BinaryInst(curBB, bop, null, orhs));
+                if (op.equals("/")) {
+                    curBB.append(new Move(curBB, result, vrax));
+                } else {
+                    curBB.append(new Move(curBB, result, vrdx));
+                }
+            }
         }
         return result;
     }
@@ -874,7 +909,11 @@ public class IRBuilder implements IAstVisitor {
         switch(node.op) {
             case "*": case "/": case "%": case "+": case "-":
             case ">>": case "<<": case "&": case "|": case "^":
-                exprResultMap.put(node, doArithmeticBinary(node.op, node.lhs, node.rhs));
+                if(node.op.equals("+") && isStringType(node.type)) {
+                    exprResultMap.put(node, doStringConcate(node.lhs, node.rhs));
+                } else {
+                    exprResultMap.put(node, doArithmeticBinary(node.op, assignToMap.get(node), node.lhs, node.rhs));
+                }
                 break;
             case "<": case ">": case "==": case ">=": case "<=": case "!=":
                 doRelationBinary(node.op, node.lhs, node.rhs, trueBBMap.get(node), falseBBMap.get(node));
