@@ -142,7 +142,8 @@ public class Function {
                     usedPhysicalRegisters.addAll(RegisterSet.callerSave);
                 } else if(inst instanceof BinaryInst && isSpecialBinaryOp(((BinaryInst) inst).op)) {
 //                    usedPhysicalRegisters.addAll(trans(inst.getUseRegs()));
-                    usedPhysicalRegisters.add((PhysicalRegister)((BinaryInst) inst).src);
+                    if(((BinaryInst) inst).src instanceof Register)
+                        usedPhysicalRegisters.add((PhysicalRegister) ((BinaryInst) inst).src);
                     usedPhysicalRegisters.add(RegisterSet.rax);
                     usedPhysicalRegisters.add(RegisterSet.rdx);
                 } else {
