@@ -688,6 +688,7 @@ public class IRBuilder implements IAstVisitor {
         if(!funcDeclarationMap.containsKey(name))
             return false;
         FuncDeclaration funcDeclaration = funcDeclarationMap.get(name);
+        if(!funcDeclaration.symbol.usedGlobalVariables.isEmpty()) return false;
         List<Statement> body = funcDeclaration.body;
         if(body.size() != 1) return false;
         if(!(body.get(0) instanceof ReturnStatement)) return false;
@@ -861,6 +862,9 @@ public class IRBuilder implements IAstVisitor {
             case "&": bop = BinaryInst.BinaryOp.AND; isRevertable = true; break;
             case "|": bop = BinaryInst.BinaryOp.OR; isRevertable = true; break;
             case "^": bop = BinaryInst.BinaryOp.XOR; isRevertable = true; break;
+        }
+        if(op.equals("%")) {
+            System.err.println("DARRELL");
         }
         lhs.accept(this);
         rhs.accept(this);
