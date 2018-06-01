@@ -4,6 +4,7 @@ import Mstar.IR.BasicBlock;
 import Mstar.IR.Function;
 import Mstar.IR.IIRVisitor;
 import Mstar.IR.Operand.*;
+import Mstar.IR.RegisterSet;
 import Mstar.Worker.BackEnd.IRBuilder;
 
 import java.util.Arrays;
@@ -37,13 +38,12 @@ public class Call extends IRInstruction {
 
     @Override
     public LinkedList<Register> getUseRegs() {
-        return new LinkedList<>(Arrays.asList(IRBuilder.vargRegs).subList(0, Integer.min(6, args.size())));
+        return new LinkedList<>(RegisterSet.vargs.subList(0, Integer.min(6, args.size())));
     }
 
     @Override
     public LinkedList<Register> getDefRegs() {
-        LinkedList<Register> regs = new LinkedList<>();
-        regs.add(IRBuilder.vrax);
+        LinkedList<Register> regs = new LinkedList<>(RegisterSet.vcallerSave);
         return regs;
     }
 

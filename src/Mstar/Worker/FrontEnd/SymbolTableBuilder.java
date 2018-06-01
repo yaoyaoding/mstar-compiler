@@ -188,6 +188,8 @@ public class SymbolTableBuilder implements IAstVisitor {
                 boolean isGlobalVariable = currentSymbolTable == globalSymbolTable;
                 d.symbol = new VariableSymbol(d.name, type, d.location, isClassField, isGlobalVariable);
                 currentSymbolTable.putVariableSymbol(d.name, d.symbol);
+                if(isGlobalVariable && d.init != null)
+                    globalSymbolTable.globalInitUsedVariables.add(d.symbol);
             }
         } else {
             errorRecorder.addRecord(d.typeNode.location, "can not resolve the type");
@@ -206,6 +208,7 @@ public class SymbolTableBuilder implements IAstVisitor {
         for(Statement s : funcDeclaration.body)
             s.accept(this);
         leave();
+        curFunction = null;
     }
 
     @Override
@@ -256,11 +259,7 @@ public class SymbolTableBuilder implements IAstVisitor {
 
     @Override
     public void visit(Statement node) {
-        try {
-            assert false;
-        } catch (Error e) {
-            e.getStackTrace();
-        }
+        assert false;
     }
 
     @Override
@@ -333,8 +332,12 @@ public class SymbolTableBuilder implements IAstVisitor {
         }
         node.symbol = symbol;
         node.type = symbol.type;
-        if(symbol.isGlobalVariable && curFunction != null) {
-            curFunction.usedGlobalVariables.add(symbol);
+        if(symbol.isGlobalVariable) {
+            if(curFunction == null) {
+                globalSymbolTable.globalInitUsedVariables.add(symbol);
+            } else {
+                curFunction.usedGlobalVariables.add(symbol);
+            }
         }
     }
 
@@ -430,15 +433,11 @@ public class SymbolTableBuilder implements IAstVisitor {
                 node.type = node.fieldAccess.type;
             } else {
                 node.methodCall.functionSymbol = resolveFunctionSymbol(node.methodCall.functionName, classType.symbol.classSymbolTable);
-                try {
-                    if (node.methodCall.functionSymbol == null) {
-                        errorRecorder.addRecord(node.methodCall.location,
-                                "class '" + classType.name + "' has not method '" + node.methodCall.functionName + "'");
-                        node.type = null;
-                        return;
-                    }
-                } catch (Exception e) {
-                    System.err.println(Arrays.toString(e.getStackTrace()));
+                if (node.methodCall.functionSymbol == null) {
+                    errorRecorder.addRecord(node.methodCall.location,
+                            "class '" + classType.name + "' has not method '" + node.methodCall.functionName + "'");
+                    node.type = null;
+                    return;
                 }
                 node.methodCall.type = node.methodCall.functionSymbol.returnType;
                 node.type = node.methodCall.type;

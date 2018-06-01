@@ -49,7 +49,7 @@ public class Function {
         this.visitedBasicBlocks = new HashSet<>();
         this.visitedFunctions = new HashSet<>();
         if(type != Type.UserDefined && !name.equals("init")) {
-            for(PhysicalRegister pr : X86RegisterSet.regs) {
+            for(PhysicalRegister pr : RegisterSet.allRegs) {
                 if(pr.name.equals("rbp") || pr.name.equals("rsp"))
                     continue;
                 this.usedPhysicalRegisters.add(pr);
@@ -116,7 +116,7 @@ public class Function {
             try {
                 ret.add((PhysicalRegister) r);
             } catch (Exception e) {
-                e.getStackTrace();
+                throw e;
             }
         }
         return ret;
@@ -130,13 +130,21 @@ public class Function {
         recursiveUsedPhysicalRegisters.addAll(node.usedPhysicalRegisters);
     }
 
+    private boolean isSpecialBinaryOp(BinaryInst.BinaryOp op) {
+        return op == BinaryInst.BinaryOp.MUL || op == BinaryInst.BinaryOp.DIV || op == BinaryInst.BinaryOp.MOD;
+    }
     public void finishAllocate() {
         for(BasicBlock bb : basicblocks) {
             for(IRInstruction inst = bb.head; inst != null; inst = inst.next) {
                 if(inst instanceof Return)
                     continue;
                 if(inst instanceof Call) {
-                    usedPhysicalRegisters.add(X86RegisterSet.rax);
+                    usedPhysicalRegisters.addAll(RegisterSet.callerSave);
+                } else if(inst instanceof BinaryInst && isSpecialBinaryOp(((BinaryInst) inst).op)) {
+//                    usedPhysicalRegisters.addAll(trans(inst.getUseRegs()));
+                    usedPhysicalRegisters.add((PhysicalRegister)((BinaryInst) inst).src);
+                    usedPhysicalRegisters.add(RegisterSet.rax);
+                    usedPhysicalRegisters.add(RegisterSet.rdx);
                 } else {
                     usedPhysicalRegisters.addAll(trans(inst.getUseRegs()));
                     usedPhysicalRegisters.addAll(trans(inst.getDefRegs()));

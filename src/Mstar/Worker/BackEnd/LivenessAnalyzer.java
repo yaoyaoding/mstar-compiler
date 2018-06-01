@@ -15,6 +15,8 @@ import java.util.LinkedList;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
+import static java.lang.System.exit;
+
 public class LivenessAnalyzer {
 
     public static class Graph {
@@ -113,11 +115,7 @@ public class LivenessAnalyzer {
     public LinkedList<VirtualRegister> trans(Collection<Register> registers) {
         LinkedList<VirtualRegister> virtualRegisters = new LinkedList<>();
         for(Register reg : registers) {
-            try {
-                virtualRegisters.add((VirtualRegister) reg);
-            } catch (Exception e) {
-                e.getStackTrace();
-            }
+            virtualRegisters.add((VirtualRegister) reg);
         }
         return virtualRegisters;
     }

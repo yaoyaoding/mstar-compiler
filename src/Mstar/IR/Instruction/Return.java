@@ -3,6 +3,7 @@ package Mstar.IR.Instruction;
 import Mstar.IR.BasicBlock;
 import Mstar.IR.IIRVisitor;
 import Mstar.IR.Operand.*;
+import Mstar.IR.RegisterSet;
 import Mstar.Worker.BackEnd.IRBuilder;
 
 import java.util.HashMap;
@@ -27,7 +28,7 @@ public class Return extends IRInstruction {
     public LinkedList<Register> getUseRegs() {
         LinkedList<Register> regs = new LinkedList<>();
         if(bb.function.hasReturnValue)
-            regs.add(IRBuilder.vrax);
+            regs.add(RegisterSet.vrax);
         return regs;
     }
 

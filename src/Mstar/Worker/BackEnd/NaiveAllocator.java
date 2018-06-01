@@ -8,7 +8,7 @@ import Mstar.IR.Operand.*;
 
 import java.util.*;
 
-import static Mstar.IR.X86RegisterSet.*;
+import static Mstar.IR.RegisterSet.*;
 
 public class NaiveAllocator {
     IRProgram irProgram;

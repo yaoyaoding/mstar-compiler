@@ -6,7 +6,7 @@ import Mstar.IR.Function;
 import Mstar.IR.IRProgram;
 import Mstar.IR.Instruction.*;
 import Mstar.IR.Operand.*;
-import Mstar.IR.X86RegisterSet;
+import Mstar.IR.RegisterSet;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -78,29 +78,28 @@ public class StackFrameBuilder {
         for(int i = 0; i < frame.parameters.size(); i++) {
             StackSlot ss = frame.parameters.get(i);
             assert ss.base == null && ss.constant == null;
-            ss.base = X86RegisterSet.rbp;
+            ss.base = RegisterSet.rbp;
             ss.constant = new Immediate(16 + 8 * i);
         }
         for(int i = 0; i < frame.temporaries.size(); i++) {
             StackSlot ss = frame.temporaries.get(i);
             assert ss.base == null && ss.constant == null;
-            ss.base = X86RegisterSet.rbp;
+            ss.base = RegisterSet.rbp;
             ss.constant = new Immediate(-8 - 8 * i);
         }
 
         /*
             save caller save registers before call
-         */
         for(BasicBlock bb : function.basicblocks) {
             for(IRInstruction inst = bb.head; inst != null; inst = inst.next) {
                 if(!(inst instanceof Call)) continue;
                 Call call = (Call)inst;
                 HashSet<PhysicalRegister> needToSave = new HashSet<>(call.func.recursiveUsedPhysicalRegisters);
-                needToSave.retainAll(X86RegisterSet.callerSave);
+                needToSave.retainAll(RegisterSet.callerSave);
                 needToSave.retainAll(function.usedPhysicalRegisters);
-                needToSave.remove(X86RegisterSet.rax);
+                needToSave.remove(RegisterSet.rax);
                 for(int i = 0; i < call.args.size() && i < 6; i++)
-                    needToSave.remove(X86RegisterSet.args.get(i));
+                    needToSave.remove(RegisterSet.args.get(i));
                 for(PhysicalRegister reg : needToSave)
                     inst.prepend(new Push(bb, reg));
                 for(PhysicalRegister reg : needToSave)
@@ -109,16 +108,17 @@ public class StackFrameBuilder {
                     inst = inst.next;
             }
         }
+         */
 
         /*
             add prologue
          */
         IRInstruction headInst = function.enterBB.head;
-        headInst.prepend(new Push(headInst.bb, X86RegisterSet.rbp));
-        headInst.prepend(new Move(headInst.bb, X86RegisterSet.rbp, X86RegisterSet.rsp));
-        headInst.prepend(new BinaryInst(headInst.bb, BinaryInst.BinaryOp.SUB, X86RegisterSet.rsp, new Immediate(frame.getFrameSize())));
+        headInst.prepend(new Push(headInst.bb, RegisterSet.rbp));
+        headInst.prepend(new Move(headInst.bb, RegisterSet.rbp, RegisterSet.rsp));
+        headInst.prepend(new BinaryInst(headInst.bb, BinaryInst.BinaryOp.SUB, RegisterSet.rsp, new Immediate(frame.getFrameSize())));
         HashSet<PhysicalRegister> needToSave = new HashSet<>(function.usedPhysicalRegisters);
-        needToSave.retainAll(X86RegisterSet.calleeSave);
+        needToSave.retainAll(RegisterSet.calleeSave);
         for(PhysicalRegister pr : needToSave)
             headInst.append(new Push(headInst.bb, pr));
 

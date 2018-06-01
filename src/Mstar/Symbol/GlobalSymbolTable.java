@@ -2,17 +2,20 @@ package Mstar.Symbol;
 
 import Mstar.AST.TokenLocation;
 
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class GlobalSymbolTable extends SymbolTable {
     public Map<String,ClassSymbol> classes;
     public Map<String,PrimitiveSymbol> primitives;
+    public HashSet<VariableSymbol> globalInitUsedVariables;
 
     public GlobalSymbolTable() {
         super(null);
         classes = new LinkedHashMap<>();
         primitives = new LinkedHashMap<>();
+        globalInitUsedVariables = new HashSet<>();
         addMstarDefaultTypes();
     }
 

@@ -7,8 +7,8 @@ import Mstar.IR.Operand.*;
 import java.util.HashMap;
 import java.util.LinkedList;
 
-import static Mstar.Worker.BackEnd.IRBuilder.vrax;
-import static Mstar.Worker.BackEnd.IRBuilder.vrdx;
+import static Mstar.IR.RegisterSet.vrax;
+import static Mstar.IR.RegisterSet.vrdx;
 
 public class BinaryInst extends IRInstruction {
     public enum BinaryOp {

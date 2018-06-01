@@ -7,12 +7,19 @@ import Mstar.IR.Function;
 import Mstar.IR.IRProgram;
 import Mstar.IR.Instruction.*;
 import Mstar.IR.Operand.*;
-import Mstar.IR.X86RegisterSet;
+import Mstar.IR.RegisterSet;
+import Mstar.IR.RegisterSet.*;
 import Mstar.Symbol.*;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Stack;
+
+import static Mstar.IR.RegisterSet.vrax;
+import static Mstar.IR.RegisterSet.vrcx;
+import static Mstar.IR.RegisterSet.vrdx;
+
 
 public class IRBuilder implements IAstVisitor {
     private GlobalSymbolTable gst;
@@ -61,39 +68,6 @@ public class IRBuilder implements IAstVisitor {
         initLibraryFunctions();
     }
 
-    public static VirtualRegister[] vargRegs = new VirtualRegister[6];
-    public static VirtualRegister[] vcalleeSaveRegs = new VirtualRegister[7];
-    public static VirtualRegister vrax;
-    public static VirtualRegister vrdx;
-    public static VirtualRegister vrcx;
-    {
-        //  parameters, caller save
-        vargRegs[0] = new VirtualRegister("rdi", X86RegisterSet.rdi);
-        vargRegs[1] = new VirtualRegister("rsi", X86RegisterSet.rsi);
-        vargRegs[2] = new VirtualRegister("rdx", X86RegisterSet.rdx);
-        vargRegs[3] = new VirtualRegister("rcx", X86RegisterSet.rcx);
-        vargRegs[4] = new VirtualRegister("r8", X86RegisterSet.r8);
-        vargRegs[5] = new VirtualRegister("r9", X86RegisterSet.r9);
-
-        //  callee save
-        vcalleeSaveRegs[0] = new VirtualRegister("rbx", X86RegisterSet.rbx);
-        vcalleeSaveRegs[1] = new VirtualRegister("r10", X86RegisterSet.r10 );
-        vcalleeSaveRegs[2] = new VirtualRegister("r11", X86RegisterSet.r11 );
-        vcalleeSaveRegs[3] = new VirtualRegister("r12", X86RegisterSet.r12 );
-        vcalleeSaveRegs[4] = new VirtualRegister("r13", X86RegisterSet.r13 );
-        vcalleeSaveRegs[5] = new VirtualRegister("r14", X86RegisterSet.r14 );
-        vcalleeSaveRegs[6] = new VirtualRegister("r15", X86RegisterSet.r15);
-
-        //  ret value
-        vrax = new VirtualRegister("rax", X86RegisterSet.rax);
-
-        //  also special for mul, div and mod
-        vrdx = vargRegs[2];
-
-        //  also special for sal, sar
-        vrcx = vargRegs[3];
-    }
-
     public IRProgram irProgram;
 
     private void initLibraryFunctions() {
@@ -138,12 +112,13 @@ public class IRBuilder implements IAstVisitor {
     private void buildInitFunction(AstProgram node) {
         irProgram.functions.add(library_init);
         curFunction = library_init;
+        library_init.usedGlobalVariables = new HashSet<>(gst.globalInitUsedVariables);
         BasicBlock enterBB = new BasicBlock(curFunction, "enterBB");
         curBB = curFunction.enterBB = enterBB;
         for(VariableDeclaration vd : node.globalVariables) {
             if(vd.init == null)
                 continue;
-            assign(vd.init, vd.symbol.virtualRegister.spillPlace);
+            assign(vd.init, vd.symbol.virtualRegister);
         }
         curBB.append(new Call(curBB, vrax, functionMap.get("main")));
         curBB.append(new Return(curBB));
@@ -236,7 +211,7 @@ public class IRBuilder implements IAstVisitor {
         /* copy the arguments in physical registers and memory to virtual registers */
         for(int i = 0; i < curFunction.parameters.size(); i++) {
             if(i < 6) {
-                curBB.append(new Move(curBB, curFunction.parameters.get(i), vargRegs[i]));
+                curBB.append(new Move(curBB, curFunction.parameters.get(i), RegisterSet.vargs.get(i)));
             } else {
                 curBB.append(new Move(curBB, curFunction.parameters.get(i), curFunction.parameters.get(i).spillPlace));
             }

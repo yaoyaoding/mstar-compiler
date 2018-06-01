@@ -6,10 +6,9 @@ import Mstar.IR.IRProgram;
 import Mstar.IR.Instruction.IRInstruction;
 import Mstar.IR.Instruction.Move;
 import Mstar.IR.Operand.*;
-import Mstar.IR.X86RegisterSet;
+import Mstar.IR.RegisterSet;
 import Mstar.Worker.BackEnd.LivenessAnalyzer.Graph;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -25,7 +24,7 @@ public class SimpleGraphAllocator {
 
     public SimpleGraphAllocator(IRProgram irProgram) {
         this.irProgram = irProgram;
-        for(PhysicalRegister pr : X86RegisterSet.regs) {
+        for(PhysicalRegister pr : RegisterSet.allRegs) {
             if(pr.name.equals("rsp") || pr.name.equals("rbp"))
                 continue;
             generalRegisters.add(pr);
@@ -154,7 +153,7 @@ public class SimpleGraphAllocator {
                 spilledRegisers.add(vr);
             } else {
                 PhysicalRegister pr = null;
-                for(PhysicalRegister reg : X86RegisterSet.callerSave) {
+                for(PhysicalRegister reg : RegisterSet.callerSave) {
                     if (okColors.contains(reg)) {
                         pr = reg;
                         break;

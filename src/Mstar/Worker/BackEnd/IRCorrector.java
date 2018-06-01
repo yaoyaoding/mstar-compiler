@@ -1,10 +1,7 @@
 package Mstar.Worker.BackEnd;
 
 import Mstar.Config;
-import Mstar.IR.BasicBlock;
-import Mstar.IR.Function;
-import Mstar.IR.IIRVisitor;
-import Mstar.IR.IRProgram;
+import Mstar.IR.*;
 import Mstar.IR.Instruction.*;
 import Mstar.IR.Operand.*;
 import Mstar.Symbol.VariableSymbol;
@@ -171,7 +168,7 @@ public class IRCorrector implements IIRVisitor {
         while(inst.args.size() > 6)
             inst.prepend(new Push(inst.bb, inst.args.removeLast()));
         for(int i = inst.args.size() - 1; i >= 0; i--) {
-            inst.prepend(new Move(inst.bb, IRBuilder.vargRegs[i], inst.args.get(i)));
+            inst.prepend(new Move(inst.bb, RegisterSet.vargs.get(i), inst.args.get(i)));
             inst.prev.accept(this);
         }
         for(VariableSymbol vs : callerUsed) {

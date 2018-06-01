@@ -3,7 +3,7 @@ package Mstar.Worker;
 import Mstar.AST.AstProgram;
 import Mstar.Config;
 import Mstar.IR.IRProgram;
-import Mstar.IR.X86RegisterSet;
+import Mstar.IR.RegisterSet;
 import Mstar.Parser.MstarLexer;
 import Mstar.Parser.MstarParser;
 import Mstar.Symbol.GlobalSymbolTable;
@@ -28,7 +28,7 @@ public class MstarCompiler {
         MstarLexer mstarLexer = new MstarLexer(ais);
         CommonTokenStream tokens = new CommonTokenStream(mstarLexer);
         MstarParser parser = new MstarParser(tokens);
-        X86RegisterSet.init();
+        RegisterSet.init();
 
         //  record errors
         ErrorRecorder errorRecorder = new ErrorRecorder();

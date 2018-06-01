@@ -312,8 +312,8 @@ public class IRPrinter implements IIRVisitor {
 
     @Override
     public void visit(Move inst) {
-        if(inst.src == inst.dest)
-            return;
+//        if(inst.src == inst.dest)
+ //           return;
         append("\tmov ");
         inst.dest.accept(this);
         append(", ");
