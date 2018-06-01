@@ -1,75 +1,90 @@
-//考察点：section 8 语句，包括if,while,for,break,continue,return等
-//算法：线性筛法求欧拉函数
-//样例输入：10
+//考察点：section 9 函数，包括函数定义，内建函数
+//算法：斜堆
+//样例输入：
+//5 5
+//ABCDE
+//1 2 3 4 5
 //样例输出：
-//1
-//2
-//2
-//4
-//2
-//6
-//4
-//6
-//4
-
+//5 E
+//10
 int N;
-int M = 0;
-bool[] check;
+int M;
+string ch;
 
-int main() {
-    N = getInt();
-	check = new bool[N+5];
-	int i = 0;
-	while ( i <= N ) check[i++] = true;
-	int[] phi = new int[N+5];
-	int[] P = new int[N+5];
-	phi[1] = 1;
-	for (i = 2; ; ++i ) {
-		if ( i > N ) break;
-		if ( check[i] ) {
-			P[++M] = i;
-			phi[i] = i - 1;
-		}
-		int k = i;
-		int i;
-		for (i = 1; i <= M && (k * P[i] <= N); i++) {
-			int tmp = k * P[i];
-			if ( tmp > N ) continue;
-			check[tmp] = false;
-			if ( k % P[i] == 0) {
-				phi[tmp] = phi[k] * P[i];
-				break;
-			}
-			else {
-				phi[k * P[i]] = phi[k] * (P[i] - 1);
-			}
-		}
-		println(toString(phi[k]));
+int[] l;
+int[] r;
+int[] w;
+
+int merge(int x,int y)
+{
+	if (0 == x) return y;
+	if (0 == y) return x;
+	if (w[x] < w[y]) {
+		int e = x;
+		x = y;
+		y = e;
 	}
-    return 0;
+	r[x] = merge(r[x],y);
+	int e = l[x];
+	l[x] = r[x];
+	r[x] = e;
+	return x;
+}
+
+int main()
+{
+	N = getInt();
+	M = getInt();
+	ch = getString();
+	l = new int[N+M+5];
+	r = new int[N+M+5];
+	w = new int[N+M+5];
+	int i;
+	for (i=1;i <= N;i++) {
+		w[i] = getInt();
+		l[i] = 0;
+   		r[i] = 0;
+	}
+	for (i=1;i <= M;i++) {
+		w[i + N] = ch.ord(i-1);
+		l[i + N] = 0;
+		r[i + N] = 0;
+	}
+	int rt0 = 1;
+	int rt1 = N + 1;
+	for (i = 2;i <= N;i++)
+		rt0 = merge(rt0,i);
+	for (i = N+2;i<= N+M;i++)
+		rt1 = merge(rt1,i);
+	print(toString(w[rt0]));
+	print(" ");
+	print(ch.substring(rt1-N-1,rt1-N-1));
+	print("\n");
+	println(toString(merge(rt0,rt1)));
+	return 0;
 }
 
 
 
 /*!! metadata:
 === comment ===
-statement_test-huyuncong.mx
+function_test-huyuncong.mx
 === input ===
-10
+5
+5
+ABCDE
+1
+2
+3
+4
+5
 === assert ===
 output
 === timeout ===
 0.1
 === output ===
-1
-2
-2
-4
-2
-6
-4
-6
-4
+5 E
+10
 === phase ===
 codegen pretest
 === is_public ===

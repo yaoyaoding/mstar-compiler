@@ -119,6 +119,7 @@ public class StackFrameBuilder {
         headInst.prepend(new BinaryInst(headInst.bb, BinaryInst.BinaryOp.SUB, RegisterSet.rsp, new Immediate(frame.getFrameSize())));
         HashSet<PhysicalRegister> needToSave = new HashSet<>(function.usedPhysicalRegisters);
         needToSave.retainAll(RegisterSet.calleeSave);
+        headInst = headInst.prev;
         for(PhysicalRegister pr : needToSave)
             headInst.append(new Push(headInst.bb, pr));
 
