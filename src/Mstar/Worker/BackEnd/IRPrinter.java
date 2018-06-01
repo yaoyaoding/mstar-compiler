@@ -255,6 +255,8 @@ public class IRPrinter implements IIRVisitor {
     @Override
     public void visit(BinaryInst inst) {
         String op = null;
+        if((inst.op == BinaryInst.BinaryOp.ADD || inst.op == BinaryInst.BinaryOp.SUB) &&  inst.src instanceof Immediate && ((Immediate) inst.src).value == 0)
+            return;
         if(inst.op == BinaryInst.BinaryOp.MUL) {
             append("\timul ");
             inst.src.accept(this);
@@ -286,11 +288,7 @@ public class IRPrinter implements IIRVisitor {
             return;
         }
         append("\t" + op + " ");
-        try {
-            inst.dest.accept(this);
-        } catch (Exception e) {
-            System.err.println("DARRELL");
-        }
+        inst.dest.accept(this);
         append(", ");
         inst.src.accept(this);
         append("\n");
@@ -312,8 +310,8 @@ public class IRPrinter implements IIRVisitor {
 
     @Override
     public void visit(Move inst) {
-//        if(inst.src == inst.dest)
- //           return;
+        if(inst.src == inst.dest)
+            return;
         append("\tmov ");
         inst.dest.accept(this);
         append(", ");

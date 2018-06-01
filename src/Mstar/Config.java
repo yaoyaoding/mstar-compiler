@@ -6,6 +6,9 @@ public class Config {
     public enum Allocator {
         NaiveAllocator, SimpleGraphAllocator, GraphAllocator
     };
+
+    public static boolean useSimpleInline = true;
+
     public static Allocator allocator = Allocator.SimpleGraphAllocator;
     public static boolean printAST = false;
     public static boolean printIRBeforeAllocator = true;

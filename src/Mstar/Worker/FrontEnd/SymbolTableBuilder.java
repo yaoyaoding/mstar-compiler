@@ -421,6 +421,7 @@ public class SymbolTableBuilder implements IAstVisitor {
             }
         } else {
             ClassType classType = (ClassType) node.object.type;
+            if(classType == null) return;
             if (node.fieldAccess != null) {
                 node.fieldAccess.symbol = resolveVariableSymbol(node.fieldAccess.name, classType.symbol.classSymbolTable);
                 if (node.fieldAccess.symbol == null) {
@@ -432,7 +433,11 @@ public class SymbolTableBuilder implements IAstVisitor {
                 node.fieldAccess.type = node.fieldAccess.symbol.type;
                 node.type = node.fieldAccess.type;
             } else {
-                node.methodCall.functionSymbol = resolveFunctionSymbol(node.methodCall.functionName, classType.symbol.classSymbolTable);
+                try {
+                    node.methodCall.functionSymbol = resolveFunctionSymbol(node.methodCall.functionName, classType.symbol.classSymbolTable);
+                } catch (Exception e) {
+                    e.getStackTrace();
+                }
                 if (node.methodCall.functionSymbol == null) {
                     errorRecorder.addRecord(node.methodCall.location,
                             "class '" + classType.name + "' has not method '" + node.methodCall.functionName + "'");

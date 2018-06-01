@@ -11,10 +11,7 @@ import Mstar.IR.RegisterSet;
 import Mstar.IR.RegisterSet.*;
 import Mstar.Symbol.*;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.Stack;
+import java.util.*;
 
 import static Mstar.IR.RegisterSet.vrax;
 import static Mstar.IR.RegisterSet.vrcx;
@@ -32,11 +29,14 @@ public class IRBuilder implements IAstVisitor {
     private VirtualRegister curThisPointer;
 
     private HashMap<String,Function> functionMap;
+    private HashMap<String,FuncDeclaration> funcDeclarationMap;
     private HashMap<Expression,BasicBlock> trueBBMap, falseBBMap;
     private HashMap<Expression,Operand> exprResultMap;
     private HashMap<Expression,Address> assignToMap;
     private boolean isInParameter;
     private boolean isInClassDeclaration;
+    private boolean isInInline;
+    private HashMap<VariableSymbol,VirtualRegister> inlineVariableRegister;
 
 
     private static Function library_print;
@@ -59,12 +59,14 @@ public class IRBuilder implements IAstVisitor {
         this.loopAfterBB = new Stack<>();
         this.loopConditionBB = new Stack<>();
         this.functionMap = new HashMap<>();
+        this.funcDeclarationMap = new HashMap<>();
         this.trueBBMap = new HashMap<>();
         this.falseBBMap = new HashMap<>();
         this.exprResultMap = new HashMap<>();
         this.assignToMap = new HashMap<>();
         this.isInParameter = false;
         this.isInClassDeclaration = false;
+        this.inlineVariableRegister = new HashMap<>();
         initLibraryFunctions();
     }
 
@@ -145,6 +147,8 @@ public class IRBuilder implements IAstVisitor {
                 funcDeclarations.add(cd.constructor);
             funcDeclarations.addAll(cd.methods);
         }
+        for(FuncDeclaration funcDeclaration : funcDeclarations)
+            funcDeclarationMap.put(funcDeclaration.symbol.name, funcDeclaration);
         for(FuncDeclaration fd : funcDeclarations) {
             if(functionMap.containsKey(fd.symbol.name)) //  library function
                 continue;
@@ -460,7 +464,11 @@ public class IRBuilder implements IAstVisitor {
             int offset = curClassSymbol.classSymbolTable.getVariableOffset(fieldName);
             operand = new Memory(curThisPointer, new Immediate(offset));
         } else {
-            operand = node.symbol.virtualRegister;
+            if(isInInline) {
+                operand = inlineVariableRegister.get(node.symbol);
+            } else {
+                operand = node.symbol.virtualRegister;
+            }
             if(node.symbol.isGlobalVariable) {
                 curFunction.usedGlobalVariables.add(node.symbol);
             }
@@ -541,14 +549,20 @@ public class IRBuilder implements IAstVisitor {
             e.accept(this);
             arguments.add(exprResultMap.get(e));
         }
-        curBB.append(new Call(curBB, vrax, functionMap.get(node.functionSymbol.name), arguments));
-        if(trueBBMap.containsKey(node)) {
-            curBB.append(new CJump(curBB, vrax, CJump.CompareOp.NE, new Immediate(0), trueBBMap.get(node), falseBBMap.get(node)));
+        if(deserveInline(node.functionSymbol.name)) {
+            Operand result = doInline(node.functionSymbol.name, arguments);
+            if(result != null)
+                exprResultMap.put(node, result);
         } else {
-            if(!isVoidType(node.functionSymbol.returnType)) {
-                VirtualRegister vr = new VirtualRegister("");
-                curBB.append(new Move(curBB, vr, vrax));
-                exprResultMap.put(node, vr);
+            curBB.append(new Call(curBB, vrax, functionMap.get(node.functionSymbol.name), arguments));
+            if(trueBBMap.containsKey(node)) {
+                curBB.append(new CJump(curBB, vrax, CJump.CompareOp.NE, new Immediate(0), trueBBMap.get(node), falseBBMap.get(node)));
+            } else {
+                if(!isVoidType(node.functionSymbol.returnType)) {
+                    VirtualRegister vr = new VirtualRegister("");
+                    curBB.append(new Move(curBB, vr, vrax));
+                    exprResultMap.put(node, vr);
+                }
             }
         }
     }
@@ -646,6 +660,82 @@ public class IRBuilder implements IAstVisitor {
         }
     }
 
+    private boolean hasFuncCall(Expression e) {
+        if( e instanceof  FuncCallExpression ) {
+            return true;
+        }
+        if( e instanceof  NewExpression ) {
+            return true;
+        }
+        if( e instanceof  UnaryExpression ){
+            return hasFuncCall(((UnaryExpression) e).expression);
+        }
+        if( e instanceof  MemberExpression ){
+            return ((MemberExpression) e).methodCall != null;
+        }
+        if( e instanceof  BinaryExpression ){
+            return hasFuncCall(((BinaryExpression) e).lhs) || hasFuncCall(((BinaryExpression) e).rhs);
+        }
+        if( e instanceof  TernaryExpression ){
+            return hasFuncCall(((TernaryExpression) e).condition)
+                    || hasFuncCall(((TernaryExpression) e).exprTrue) || hasFuncCall(((TernaryExpression) e).exprFalse);
+        }
+        return false;
+    }
+
+    private boolean deserveInline(String name) {
+        if(!Config.useSimpleInline) return false;
+        if(!funcDeclarationMap.containsKey(name))
+            return false;
+        FuncDeclaration funcDeclaration = funcDeclarationMap.get(name);
+        List<Statement> body = funcDeclaration.body;
+        if(body.size() != 1) return false;
+        if(!(body.get(0) instanceof ReturnStatement)) return false;
+        ReturnStatement returnStatement = (ReturnStatement) body.get(0);
+        Expression expression = returnStatement.retExpression;
+        if(hasFuncCall(expression)) return false;
+        return !isBoolType(expression.type);
+    }
+    private Operand doInline(String name, LinkedList<Operand> arguments) {
+        FuncDeclaration funcDeclaration = funcDeclarationMap.get(name);
+        isInInline = true;
+        inlineVariableRegister.clear();
+        VirtualRegister oldThisPointer = null;
+        FunctionSymbol functionSymbol = funcDeclaration.symbol;
+        LinkedList<VirtualRegister> vrArguments = new LinkedList<>();
+        for(Operand op : arguments) {
+            if(op instanceof VirtualRegister) {
+                vrArguments.add((VirtualRegister) op);
+            } else {
+                VirtualRegister vr = new VirtualRegister("");
+                curBB.append(new Move(curBB, vr, op));
+                vrArguments.add(vr);
+            }
+        }
+        if(!functionSymbol.isGlobalFunction) {
+            oldThisPointer = curThisPointer;
+            curThisPointer = vrArguments.get(0);
+        }
+        for(int i = 0; i < funcDeclaration.parameters.size(); i++) {
+            int delta = functionSymbol.isGlobalFunction ? 0 : 1;
+            inlineVariableRegister.put(funcDeclaration.parameters.get(i).symbol, vrArguments.get(i + delta));
+        }
+
+        ReturnStatement returnStatement = (ReturnStatement)funcDeclaration.body.get(0);
+
+        returnStatement.retExpression.accept(this);
+
+        Operand result = null;
+        if(!isVoidType(functionSymbol.returnType))
+            result = exprResultMap.get(returnStatement.retExpression);
+
+        if(!functionSymbol.isGlobalFunction)
+            curThisPointer = oldThisPointer;
+        isInInline = false;
+
+        return result;
+    }
+
     @Override
     public void visit(MemberExpression node) {
         VirtualRegister baseAddr = new VirtualRegister("");
@@ -670,13 +760,17 @@ public class IRBuilder implements IAstVisitor {
                     Operand arg = exprResultMap.get(expression);
                     arguments.add(arg);
                 }
-                curBB.append(new Call(curBB, vrax, function, arguments));
-                if(!isVoidType(node.methodCall.functionSymbol.returnType)) {
-                    VirtualRegister retValue = new VirtualRegister("");
-                    curBB.append(new Move(curBB, retValue, vrax));
-                    operand = retValue;
+                if(deserveInline(node.methodCall.functionSymbol.name)) {
+                    operand = doInline(node.methodCall.functionSymbol.name, arguments);
                 } else {
-                    operand = null;
+                    curBB.append(new Call(curBB, vrax, function, arguments));
+                    if (!isVoidType(node.methodCall.functionSymbol.returnType)) {
+                        VirtualRegister retValue = new VirtualRegister("");
+                        curBB.append(new Move(curBB, retValue, vrax));
+                        operand = retValue;
+                    } else {
+                        operand = null;
+                    }
                 }
             }
             if(trueBBMap.containsKey(node)) {
@@ -897,6 +991,7 @@ public class IRBuilder implements IAstVisitor {
         assign(node.exprFalse, result);
         curBB.append(new Jump(curBB, mergeBB));
         curBB = mergeBB;
+        exprResultMap.put(node, result);
     }
 
     @Override

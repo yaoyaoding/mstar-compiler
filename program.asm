@@ -680,361 +680,331 @@ L_018:
 
 ;=====================================================================
 	 section .text
-_merge:
+_hilo:
 	b0:
 	push rbp
 	mov rbp, rsp
-	sub rsp, 0
-	push r12
-	mov r12, rdi
+	mov rax, rdi
 	mov rdx, rsi
-	mov rsi, qword [g_0]
-	mov rdi, qword [g_1]
-	mov rcx, qword [g_2]
-	cmp r12, 0
-	je b1
-	b2:
-	cmp rdx, 0
-	je b3
-	b4:
-	mov rax, qword [rsi + r12 * 8 + 8]
-	cmp rax, qword [rsi + rdx * 8 + 8]
-	jl b5
-	jmp b6
-	b5:
-	mov rax, r12
-	mov r12, rdx
-	mov rdx, rax
-	b6:
-	mov qword [g_0], rsi
-	mov qword [g_1], rdi
-	mov qword [g_2], rcx
-	mov rsi, rdx
-	mov rdi, qword [rdi + r12 * 8 + 8]
-	call _merge
-	mov rcx, qword [g_2]
-	mov rdi, qword [g_1]
-	mov rsi, qword [g_0]
-	mov rax, rax
-	mov qword [rdi + r12 * 8 + 8], rax
-	mov rdx, qword [rcx + r12 * 8 + 8]
-	mov rax, qword [rdi + r12 * 8 + 8]
-	mov qword [rcx + r12 * 8 + 8], rax
-	mov qword [rdi + r12 * 8 + 8], rdx
-	mov rax, r12
-	jmp b7
-	b3:
-	mov rax, r12
-	jmp b7
-	b1:
-	mov rax, rdx
-	b7:
-	mov qword [g_0], rsi
-	mov qword [g_1], rdi
-	mov qword [g_2], rcx
-	pop r12
+	mov rcx, 16
+	sal rax, cl
+	mov rcx, rdx
+	or rcx, rax
+	mov rax, rcx
 	leave
 	ret 
+_shift_l:
+	b1:
+	push rbp
+	mov rbp, rsp
+	mov rcx, rdi
+	mov rax, rsi
+	mov rdx, rcx
+	mov rcx, rax
+	sal rdx, cl
+	mov rax, 32767
+	mov rsi, 65535
+	mov rdi, rax
+	mov rcx, 16
+	sal rdi, cl
+	mov rax, rsi
+	or rax, rdi
+	mov rcx, rdx
+	and rcx, rax
+	mov rax, rcx
+	leave
+	ret 
+_shift_r:
+	b2:
+	push rbp
+	mov rbp, rsp
+	mov rdx, rsi
+	mov rcx, 32767
+	mov rax, 65536
+	mov rsi, rcx
+	mov rcx, 16
+	sal rsi, cl
+	or rax, rsi
+	mov rcx, rdx
+	sar rax, cl
+	mov rcx, 1
+	add rcx, 1
+	sal rax, cl
+	add rax, 1
+	mov rcx, rdx
+	sar rdi, cl
+	mov rsi, rax
+	and rsi, rdi
+	mov rax, 32767
+	mov rdx, 65535
+	mov rcx, 16
+	sal rax, cl
+	mov rcx, rdx
+	or rcx, rax
+	mov rax, rsi
+	and rax, rcx
+	leave
+	ret 
+_xorshift:
+	b3:
+	push rbp
+	mov rbp, rsp
+	push r14
+	push r13
+	push rbx
+	mov rax, rdi
+	mov rbx, rsi
+	add rax, 1
+	mov r14, rax
+	mov r13, 0
+	b4:
+	mov rax, rbx
+	mov rcx, 10
+	imul rcx
+	cmp r13, rax
+	jl b5
+	b6:
+	mov rax, r14
+	xor rax, 123456789
+	pop rbx
+	pop r13
+	pop r14
+	leave
+	ret 
+	b5:
+	mov rsi, 13
+	mov rdi, r14
+	call _shift_l
+	xor r14, rax
+	mov rsi, 17
+	mov rdi, r14
+	call _shift_r
+	xor r14, rax
+	mov rsi, 5
+	mov rdi, r14
+	call _shift_l
+	xor r14, rax
+	b7:
+	mov rax, r13
+	inc r13
+	jmp b4
 _main:
 	b8:
 	push rbp
 	mov rbp, rsp
-	sub rsp, 0
+	sub rsp, 16
 	push r15
+	push r12
+	push r14
 	push r13
 	push rbx
-	push r12
-	mov rax, qword [g_1]
-	mov qword [g_1], rax
-	mov rbx, qword [g_0]
-	mov rax, qword [g_3]
-	mov qword [g_3], rax
-	mov rax, qword [g_2]
-	mov qword [g_2], rax
-	mov rax, qword [g_4]
-	mov qword [g_4], rax
-	mov rax, qword [g_5]
-	mov qword [g_5], rax
 	call __getInt
-	mov rax, rax
-	mov rax, rax
-	mov qword [g_3], rax
-	call __getInt
-	mov rax, rax
-	mov rax, rax
-	mov qword [g_4], rax
-	call __getString
-	mov rax, rax
-	mov rax, rax
-	mov qword [g_5], rax
-	mov rax, qword [g_3]
-	mov rcx, rax
-	mov rax, qword [g_4]
-	add rcx, rax
-	mov rax, rcx
-	add rax, 5
-	mov rbx, rax
+	mov r14, rax
+	mov rbx, r14
 	lea r13, [rbx * 8 + 8]
 	mov rdi, r13
 	call malloc
-	mov rax, rax
-	mov qword [rax], rbx
+	mov r15, rax
+	mov qword [r15], rbx
 	b9:
 	cmp rbx, 0
 	jg b10
 	b11:
-	mov rax, rax
-	mov qword [g_2], rax
-	mov rax, qword [g_3]
-	mov rax, rax
-	mov rcx, qword [g_4]
-	add rax, rcx
-	mov rax, rax
-	add rax, 5
-	mov rbx, rax
-	lea r15, [rbx * 8 + 8]
-	mov rdi, r15
-	call malloc
-	mov rax, rax
-	mov qword [rax], rbx
+	mov r13, r15
+	mov r12, 0
 	b12:
-	cmp rbx, 0
-	jg b13
+	cmp r12, r14
+	jl b13
 	b14:
-	mov rax, rax
-	mov qword [g_1], rax
-	mov rax, qword [g_3]
-	mov rax, rax
-	mov rcx, qword [g_4]
-	add rax, rcx
-	mov rax, rax
-	add rax, 5
-	mov rbx, rax
-	lea r12, [rbx * 8 + 8]
-	mov rdi, r12
-	call malloc
-	mov rax, rax
-	mov qword [rax], rbx
+	mov rdx, 0
+	mov r12, 0
 	b15:
-	cmp rbx, 0
-	jg b16
+	cmp r12, r14
+	jl b16
 	b17:
-	mov rbx, rax
-	mov r12, 1
-	b18:
-	mov rax, qword [g_3]
-	cmp r12, rax
-	jle b19
-	b20:
-	mov r12, 1
-	b21:
-	mov rax, qword [g_4]
-	cmp r12, rax
-	jle b22
-	b23:
-	mov r15, 1
-	mov rax, qword [g_3]
-	mov rax, rax
-	add rax, 1
-	mov r13, rax
-	mov r12, 2
-	b24:
-	mov rax, qword [g_3]
-	cmp r12, rax
-	jle b25
-	b26:
-	mov rax, qword [g_3]
-	mov rax, rax
-	add rax, 2
-	mov r12, rax
-	b27:
-	mov rax, qword [g_3]
-	mov rcx, rax
-	mov rax, qword [g_4]
-	add rcx, rax
-	cmp r12, rcx
-	jle b28
-	b29:
-	mov rdi, qword [rbx + r15 * 8 + 8]
+	mov rdi, rdx
 	call __toString
-	mov rax, rax
-	mov rdi, rax
-	call __print
-	mov rdi, g_6
-	call __print
-	mov rax, qword [g_5]
-	mov rdi, rax
-	mov rcx, r13
-	mov rax, qword [g_3]
-	sub rcx, rax
-	mov rsi, rcx
-	sub rsi, 1
-	mov rcx, r13
-	mov rax, qword [g_3]
-	sub rcx, rax
-	mov rax, rcx
-	sub rax, 1
-	mov rdx, rax
-	mov rsi, rsi
-	mov rdi, rdi
-	call __string_substring
-	mov rax, rax
-	mov rdi, rax
-	call __print
-	mov rdi, g_7
-	call __print
-	mov rax, qword [g_1]
-	mov qword [g_1], rax
-	mov qword [g_0], rbx
-	mov rax, qword [g_2]
-	mov qword [g_2], rax
-	mov rsi, r13
-	mov rdi, r15
-	call _merge
-	mov rcx, qword [g_2]
-	mov qword [g_2], rcx
-	mov rbx, qword [g_0]
-	mov rcx, qword [g_1]
-	mov qword [g_1], rcx
-	mov rax, rax
-	mov rdi, rax
-	call __toString
-	mov rax, rax
+	mov rsi, rax
+	mov rdi, g_0
+	call __stringConcate
 	mov rdi, rax
 	call __println
 	mov rax, 0
-	mov rcx, qword [g_1]
-	mov qword [g_1], rcx
-	mov qword [g_0], rbx
-	mov rcx, qword [g_3]
-	mov qword [g_3], rcx
-	mov rcx, qword [g_2]
-	mov qword [g_2], rcx
-	mov rcx, qword [g_4]
-	mov qword [g_4], rcx
-	mov rcx, qword [g_5]
-	mov qword [g_5], rcx
-	pop r12
 	pop rbx
 	pop r13
+	pop r14
+	pop r12
 	pop r15
 	leave
 	ret 
-	b28:
-	mov rax, qword [g_1]
-	mov qword [g_1], rax
-	mov qword [g_0], rbx
-	mov rax, qword [g_2]
-	mov qword [g_2], rax
-	mov rsi, r12
-	mov rdi, r13
-	call _merge
-	mov rcx, qword [g_2]
-	mov qword [g_2], rcx
-	mov rbx, qword [g_0]
-	mov rcx, qword [g_1]
-	mov qword [g_1], rcx
-	mov rax, rax
-	mov r13, rax
-	b30:
-	mov rax, r12
-	inc r12
-	jmp b27
-	b25:
-	mov rax, qword [g_1]
-	mov qword [g_1], rax
-	mov qword [g_0], rbx
-	mov rax, qword [g_2]
-	mov qword [g_2], rax
-	mov rsi, r12
-	mov rdi, r15
-	call _merge
-	mov rcx, qword [g_2]
-	mov qword [g_2], rcx
-	mov rbx, qword [g_0]
-	mov rcx, qword [g_1]
-	mov qword [g_1], rcx
-	mov rax, rax
-	mov r15, rax
-	b31:
-	mov rax, r12
-	inc r12
-	jmp b24
-	b22:
-	mov r13, r12
-	mov rax, qword [g_3]
-	add r13, rax
-	mov rax, qword [g_5]
-	mov rcx, rax
-	mov rax, r12
-	sub rax, 1
-	mov rsi, rax
-	mov rdi, rcx
-	call __string_ord
-	mov rax, rax
-	mov qword [rbx + r13 * 8 + 8], rax
-	mov rcx, r12
-	mov rax, qword [g_3]
-	add rcx, rax
-	mov rax, qword [g_2]
-	mov qword [rax + rcx * 8 + 8], 0
-	mov rax, r12
-	mov rcx, qword [g_3]
-	add rax, rcx
-	mov rcx, qword [g_1]
-	mov qword [rcx + rax * 8 + 8], 0
-	b32:
-	mov rax, r12
-	inc r12
-	jmp b21
-	b19:
-	call __getInt
-	mov rax, rax
-	mov qword [rbx + r12 * 8 + 8], rax
-	mov rax, qword [g_2]
-	mov qword [rax + r12 * 8 + 8], 0
-	mov rax, qword [g_1]
-	mov qword [rax + r12 * 8 + 8], 0
-	b33:
-	mov rax, r12
-	inc r12
-	jmp b18
 	b16:
-	mov qword [rax + rbx * 8], 0
-	dec rbx
+	mov rax, 0
+	mov qword [rbp - 8], rax
+	b18:
+	mov rax, qword [rbp - 8]
+	cmp rax, r14
+	jl b19
+	b20:
+	b21:
+	inc r12
 	jmp b15
+	b19:
+	mov r15, 0
+	b22:
+	cmp r15, r14
+	jl b23
+	b24:
+	b25:
+	mov rax, qword [rbp - 8]
+	inc rax
+	mov qword [rbp - 8], rax
+	jmp b18
+	b23:
+	mov rax, qword [rbp - 8]
+	cmp r12, rax
+	jge b26
+	jmp b27
+	b26:
+	mov rax, qword [rbp - 8]
+	cmp rax, r15
+	jge b28
+	jmp b27
+	b28:
+	mov rcx, qword [r13 + r12 * 8 + 8]
+	mov rax, qword [rbp - 8]
+	add rdx, qword [rcx + rax * 8 + 8]
+	mov rax, 1
+	mov rcx, 30
+	sal rax, cl
+	sub rax, 1
+	mov rcx, rdx
+	and rcx, rax
+	mov rdx, rcx
+	b27:
+	b29:
+	inc r15
+	jmp b22
 	b13:
-	mov qword [rax + rbx * 8], 0
-	dec rbx
+	mov rax, 0
+	mov qword [rbp - 8], rax
+	b30:
+	mov rax, qword [rbp - 8]
+	cmp rax, r14
+	jl b31
+	b32:
+	b33:
+	inc r12
 	jmp b12
+	b31:
+	mov r15, 0
+	b34:
+	cmp r15, r14
+	jl b35
+	b36:
+	b37:
+	mov rax, qword [rbp - 8]
+	inc rax
+	mov qword [rbp - 8], rax
+	jmp b30
+	b35:
+	cmp r12, 0
+	jg b38
+	jmp b39
+	b38:
+	mov rax, qword [rbp - 8]
+	cmp rax, 0
+	jg b40
+	jmp b39
+	b40:
+	cmp r15, 0
+	jg b41
+	jmp b39
+	b41:
+	mov rax, r12
+	cdq
+	mov rcx, qword [rbp - 8]
+	idiv rcx
+	mov rcx, rdx
+	mov rax, qword [rbp - 8]
+	cdq
+	idiv r15
+	mov rax, rdx
+	cmp rcx, rax
+	jne b42
+	jmp b43
+	b42:
+	mov rax, qword [rbp - 8]
+	cdq
+	idiv r15
+	mov rcx, rdx
+	mov rax, r15
+	cdq
+	idiv r12
+	mov rax, rdx
+	cmp rcx, rax
+	jne b44
+	jmp b43
+	b44:
+	mov rax, r12
+	cdq
+	mov rcx, qword [rbp - 8]
+	idiv rcx
+	mov rcx, rdx
+	mov rax, r15
+	cdq
+	idiv r12
+	mov rax, rdx
+	cmp rcx, rax
+	jne b45
+	jmp b43
+	b45:
+	mov rbx, qword [r13 + r12 * 8 + 8]
+	mov rcx, r12
+	mov rax, qword [rbp - 8]
+	and rcx, rax
+	mov rax, rcx
+	and rax, r15
+	mov rdx, r12
+	mov rcx, qword [rbp - 8]
+	add rdx, rcx
+	mov rcx, rdx
+	add rcx, r15
+	mov rsi, rcx
+	mov rdi, rax
+	call _xorshift
+	mov rcx, rax
+	mov rax, qword [rbp - 8]
+	mov qword [rbx + rax * 8 + 8], rcx
+	b43:
+	b39:
+	b46:
+	inc r15
+	jmp b34
 	b10:
-	mov qword [rax + rbx * 8], 0
+	mov r13, r14
+	lea r12, [r13 * 8 + 8]
+	mov rdi, r12
+	call malloc
+	mov qword [rax], r13
+	b47:
+	cmp r13, 0
+	jg b48
+	b49:
+	mov qword [r15 + rbx * 8], rax
 	dec rbx
 	jmp b9
+	b48:
+	mov qword [rax + r13 * 8], 0
+	dec r13
+	jmp b47
 __init:
-	b34:
+	b50:
 	push rbp
 	mov rbp, rsp
-	sub rsp, 0
 	call _main
 	leave
 	ret 
 	section .data
-g_3:
-	db 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
-g_4:
-	db 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
-g_5:
-	db 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
-g_2:
-	db 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
-g_1:
-	db 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
 g_0:
-	db 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
-g_6:
-	dq 1
-	db 20H, 00H
-g_7:
-	dq 1
-	db 0AH, 00H
+	dq 7
+	db 41H, 6EH, 73H, 20H, 69H, 73H, 20H, 00H
