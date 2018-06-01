@@ -7,6 +7,9 @@ import Mstar.IR.Operand.*;
 import java.util.HashMap;
 import java.util.LinkedList;
 
+import static Mstar.Worker.BackEnd.IRBuilder.vrax;
+import static Mstar.Worker.BackEnd.IRBuilder.vrdx;
+
 public class BinaryInst extends IRInstruction {
     public enum BinaryOp {
         ADD, SUB, MUL, DIV, MOD, SAL, SAR, AND, OR, XOR
@@ -33,7 +36,7 @@ public class BinaryInst extends IRInstruction {
         if(dest instanceof Memory) {
             dest = ((Memory) dest).copy();
             ((Memory) dest).renameUseReg(renameMap);
-        } else if(dest instanceof Register)
+        } else if(dest instanceof Register && renameMap.containsKey(dest))
             dest = renameMap.get(dest);
     }
 
@@ -54,6 +57,15 @@ public class BinaryInst extends IRInstruction {
             regs.addAll(((Memory) dest).getUseRegs());
         else if(dest instanceof Register)
             regs.add((Register) dest);
+        if(op == BinaryOp.MUL) {
+            if(!regs.contains(vrax))
+                regs.add(vrax);
+        } else if(op == BinaryOp.DIV || op == BinaryOp.MOD) {
+            if(!regs.contains(vrax))
+                regs.add(vrax);
+            if(!regs.contains(vrdx))
+                regs.add(vrdx);
+        }
         return regs;
     }
 
@@ -67,6 +79,12 @@ public class BinaryInst extends IRInstruction {
         LinkedList<Register> regs = new LinkedList<>();
         if(dest instanceof Register)
             regs.add((Register) dest);
+        if(op == BinaryOp.MUL || op == BinaryOp.DIV || op == BinaryOp.MOD) {
+            if(!regs.contains(vrax))
+                regs.add(vrax);
+            if(!regs.contains(vrdx))
+                regs.add(vrdx);
+        }
         return regs;
     }
 

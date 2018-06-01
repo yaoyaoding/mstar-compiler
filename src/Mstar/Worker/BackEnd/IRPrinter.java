@@ -15,7 +15,6 @@ import java.util.HashMap;
 import static java.lang.System.exit;
 
 public class IRPrinter implements IIRVisitor {
-    IRProgram program;
     StringBuilder stringBuilder;
     HashMap<BasicBlock,String> bbNames;
     HashMap<VirtualRegister,String> varNames;
@@ -32,9 +31,12 @@ public class IRPrinter implements IIRVisitor {
 
     public boolean showBlockHint = false;
     public boolean showNasm = false;
+    public boolean showHeader = false;
 
-    public IRPrinter(IRProgram program) {
-        this.program = program;
+    public IRPrinter() {
+        init();
+    }
+    public void init() {
         this.stringBuilder = new StringBuilder();
         this.bbNames = new HashMap<>();
         this.varNames = new HashMap<>();
@@ -78,7 +80,7 @@ public class IRPrinter implements IIRVisitor {
 
     @Override
     public void visit(IRProgram program) {
-        if(showNasm) {
+        if(showNasm && showHeader) {
             try {
                 BufferedReader br = new BufferedReader(new FileReader("lib/c2nasm/lib.asm"));
                 String line;
@@ -175,9 +177,10 @@ public class IRPrinter implements IIRVisitor {
 
     @Override
     public void visit(VirtualRegister operand) {
-        if(operand.allocatedPhysicalRegister != null)
+        if(operand.allocatedPhysicalRegister != null) {
             visit(operand.allocatedPhysicalRegister);
-        else
+            varNames.put(operand, operand.allocatedPhysicalRegister.name);
+        } else
             append(getVirtualRegsiterName(operand));
     }
 
@@ -283,7 +286,11 @@ public class IRPrinter implements IIRVisitor {
             return;
         }
         append("\t" + op + " ");
-        inst.dest.accept(this);
+        try {
+            inst.dest.accept(this);
+        } catch (Exception e) {
+            System.err.println("DARRELL");
+        }
         append(", ");
         inst.src.accept(this);
         append("\n");

@@ -97,31 +97,31 @@ public class IRBuilder implements IAstVisitor {
     public IRProgram irProgram;
 
     private void initLibraryFunctions() {
-        library_print = new Function(Function.Type.Library, "print");
+        library_print = new Function(Function.Type.Library, "print", false);
         functionMap.put("print", library_print );
-        library_println = new Function(Function.Type.Library, "println");
+        library_println = new Function(Function.Type.Library, "println", false);
         functionMap.put("println", library_println );
-        library_getString = new Function(Function.Type.Library, "getString");
+        library_getString = new Function(Function.Type.Library, "getString", false);
         functionMap.put("getString", library_getString );
-        library_getInt = new Function(Function.Type.Library, "getInt");
+        library_getInt = new Function(Function.Type.Library, "getInt", true);
         functionMap.put("getInt", library_getInt );
-        library_toString = new Function(Function.Type.Library, "toString");
+        library_toString = new Function(Function.Type.Library, "toString", true);
         functionMap.put("toString", library_toString );
-        library_string_length = new Function(Function.Type.Library, "string_length") ;
+        library_string_length = new Function(Function.Type.Library, "string_length", true) ;
         functionMap.put("string.length", library_string_length );
-        library_string_substring = new Function(Function.Type.Library, "string_substring");
+        library_string_substring = new Function(Function.Type.Library, "string_substring", true);
         functionMap.put("string.substring", library_string_substring );
-        library_string_parseInt = new Function(Function.Type.Library, "string_parseInt");
+        library_string_parseInt = new Function(Function.Type.Library, "string_parseInt", true);
         functionMap.put("string.parseInt", library_string_parseInt );
-        library_string_ord = new Function(Function.Type.Library, "string_ord");
+        library_string_ord = new Function(Function.Type.Library, "string_ord", true);
         functionMap.put("string.ord", library_string_ord );
 
-        library_stringConcate = new Function(Function.Type.Library, "stringConcate");
-        library_stringCompare = new Function(Function.Type.Library, "stringCompare");
+        library_stringConcate = new Function(Function.Type.Library, "stringConcate", true);
+        library_stringCompare = new Function(Function.Type.Library, "stringCompare", true);
 
-        library_init = new Function(Function.Type.Library, "init");
+        library_init = new Function(Function.Type.Library, "init", true);
 
-        external_malloc = new Function(Function.Type.External, "malloc");
+        external_malloc = new Function(Function.Type.External, "malloc", true);
 
     }
 
@@ -146,10 +146,9 @@ public class IRBuilder implements IAstVisitor {
             assign(vd.init, vd.symbol.virtualRegister.spillPlace);
         }
         curBB.append(new Call(curBB, vrax, functionMap.get("main")));
-        curBB.append(new Leave(curBB));
         curBB.append(new Return(curBB));
         curFunction.leaveBB = curBB;
-        curFunction.finish();
+        curFunction.finishBuild();
     }
 
     @Override
@@ -174,7 +173,7 @@ public class IRBuilder implements IAstVisitor {
         for(FuncDeclaration fd : funcDeclarations) {
             if(functionMap.containsKey(fd.symbol.name)) //  library function
                 continue;
-            functionMap.put(fd.symbol.name, new Function(Function.Type.UserDefined, fd.symbol.name));
+            functionMap.put(fd.symbol.name, new Function(Function.Type.UserDefined, fd.symbol.name, !isVoidType(fd.symbol.returnType)));
         }
         for(FuncDeclaration function : node.functions)
             function.accept(this);
@@ -182,10 +181,10 @@ public class IRBuilder implements IAstVisitor {
             classDeclaration.accept(this);
         }
 
-        /* calculate the information inside function by calling finish */
+        /* calculate the information inside function by calling finishBuild */
         for(Function func : functionMap.values()) {
             if(func.type == Function.Type.UserDefined)
-                func.finish();
+                func.finishBuild();
         }
 
         /* init function used to initialize global variables */
@@ -215,12 +214,12 @@ public class IRBuilder implements IAstVisitor {
 
         /******
          *  Processes in a function:
-         *  1. save callee-save registers
-         *  2. save arguments in physical registers to virtual registers
-         *  3. load global variables in memory to virtual registers
-         *  4. function body
-         *  5. save global variables in virtual registers to memory
-         *  6. load callee-save registers
+         *  1. save arguments in physical registers to virtual registers
+         *  2. load global variables in memory to virtual registers
+         *  3. function body
+         *  4. save global variables in virtual registers to memory
+         *
+         *  callee and caller register saving code are added in StackFrameBuilder
          */
 
         /* declare virtual registers for parameters */
@@ -233,16 +232,6 @@ public class IRBuilder implements IAstVisitor {
         for(VariableDeclaration vd : node.parameters)
             vd.accept(this);
         isInParameter = false;
-
-        /* backup callee save registers */
-        LinkedList<VirtualRegister> calleeSaveRegisterBackup = new LinkedList<>();
-        if(!Config.useNaiveAllocator) {
-            for (int i = 0; i < vcalleeSaveRegs.length; i++) {
-                VirtualRegister vr = new VirtualRegister("");
-                curBB.append(new Move(curBB, vr, vcalleeSaveRegs[i]));
-                calleeSaveRegisterBackup.add(vr);
-            }
-        }
 
         /* copy the arguments in physical registers and memory to virtual registers */
         for(int i = 0; i < curFunction.parameters.size(); i++) {
@@ -296,15 +285,6 @@ public class IRBuilder implements IAstVisitor {
         for(VariableSymbol vr : node.symbol.usedGlobalVariables) {
             retInst.prepend(new Move(retInst.bb, vr.virtualRegister.spillPlace, vr.virtualRegister));
         }
-
-        /* resume callee save registers*/
-        if(!Config.useNaiveAllocator) {
-            for (int i = 0; i < vcalleeSaveRegs.length; i++)
-                retInst.prepend(new Move(retInst.bb, vcalleeSaveRegs[i], calleeSaveRegisterBackup.get(i)));
-        }
-
-        /* add leave instruction */
-        retInst.prepend(new Leave(retInst.bb));
 
         functionMap.put(node.symbol.name,curFunction);
         irProgram.functions.add(curFunction);

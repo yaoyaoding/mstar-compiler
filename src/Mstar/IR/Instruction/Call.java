@@ -4,6 +4,7 @@ import Mstar.IR.BasicBlock;
 import Mstar.IR.Function;
 import Mstar.IR.IIRVisitor;
 import Mstar.IR.Operand.*;
+import Mstar.Worker.BackEnd.IRBuilder;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -36,9 +37,13 @@ public class Call extends IRInstruction {
 
     @Override
     public LinkedList<Register> getUseRegs() {
+        return new LinkedList<>(Arrays.asList(IRBuilder.vargRegs).subList(0, Integer.min(6, args.size())));
+    }
+
+    @Override
+    public LinkedList<Register> getDefRegs() {
         LinkedList<Register> regs = new LinkedList<>();
-        if(dest instanceof Memory)
-            regs.addAll(((Memory) dest).getUseRegs());
+        regs.add(IRBuilder.vrax);
         return regs;
     }
 
@@ -55,10 +60,6 @@ public class Call extends IRInstruction {
 
     @Override
     public void renameUseReg(HashMap<Register, Register> renameMap) {
-        if(dest instanceof Memory) {
-            dest = ((Memory) dest).copy();
-            ((Memory) dest).renameUseReg(renameMap);
-        }
     }
 
     @Override
@@ -67,13 +68,6 @@ public class Call extends IRInstruction {
             dest = renameMap.get(dest);
     }
 
-    @Override
-    public LinkedList<Register> getDefRegs() {
-        LinkedList<Register> regs = new LinkedList<>();
-        if(dest instanceof Register)
-            regs.add((Register) dest);
-        return regs;
-    }
 
     @Override
     public void accept(IIRVisitor visitor) {

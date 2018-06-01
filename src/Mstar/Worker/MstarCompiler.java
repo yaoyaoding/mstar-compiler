@@ -96,7 +96,7 @@ public class MstarCompiler {
         if(Config.printIRBeforeAllocator) {
             System.err.println("=====================================================");
             System.err.println("Intermediate Representation Before Register Allocator");
-            IRPrinter irPrinter = new IRPrinter(irProgram);
+            IRPrinter irPrinter = new IRPrinter();
             irPrinter.showBlockHint = false;
             irPrinter.showNasm = false;
             irPrinter.visit(irProgram);
@@ -105,12 +105,25 @@ public class MstarCompiler {
 
 
         //  IR with VirtualRegister -> IR with PhysicalRegister
-        NaiveAllocator naiveAllocator = new NaiveAllocator(irProgram);
-        naiveAllocator.run();
+        switch (Config.allocator) {
+            case GraphAllocator:
+                assert false;
+                break;
+            case NaiveAllocator: {
+                NaiveAllocator naiveAllocator = new NaiveAllocator(irProgram);
+                naiveAllocator.run();
+                break;
+            }
+            case SimpleGraphAllocator: {
+                SimpleGraphAllocator simpleGraphAllocator = new SimpleGraphAllocator(irProgram);
+                simpleGraphAllocator.run();
+                break;
+            }
+        }
         if(Config.printIRAfterAllocator) {
             System.err.println("====================================================");
             System.err.println("Intermediate Representation After Register Allocator");
-            IRPrinter irPrinter = new IRPrinter(irProgram);
+            IRPrinter irPrinter = new IRPrinter();
             irPrinter.showNasm = false;
             irPrinter.visit(irProgram);
             irPrinter.printTo(System.err);
@@ -123,12 +136,22 @@ public class MstarCompiler {
         if(Config.printIRWithFrame) {
             System.err.println("===========================================");
             System.err.println("Intermediate Representation With StackFrame");
-            IRPrinter irPrinter = new IRPrinter(irProgram);
+            IRPrinter irPrinter = new IRPrinter();
             irPrinter.showNasm = true;
+            irPrinter.showHeader = false;
+            irPrinter.visit(irProgram);
+            irPrinter.printTo(System.err);
+        }
+
+        if(Config.printToAsmFile) {
+            IRPrinter irPrinter = new IRPrinter();
+            irPrinter.showNasm = true;
+            irPrinter.showHeader = true;
             irPrinter.visit(irProgram);
             irPrinter.printTo(new PrintStream("program.asm"));
-//            irPrinter.printTo(System.err);
         }
+
+
 
         exit(0);
     }

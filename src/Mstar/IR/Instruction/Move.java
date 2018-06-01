@@ -15,9 +15,8 @@ public class Move extends IRInstruction {
         super(bb);
         this.dest = dest;
         this.src = src;
-        if(dest == null || src == null) {
-            System.err.println("NO");
-        }
+        if(dest == null || src == null)
+            System.err.println("DARRELL");
     }
 
     @Override
@@ -49,12 +48,16 @@ public class Move extends IRInstruction {
             dest = ((Memory) dest).copy();
             ((Memory) dest).renameUseReg(renameMap);
         }
+        if(dest == null || src == null)
+            System.err.println("DARRELL");
     }
 
     @Override
     public void renameDefReg(HashMap<Register, Register> renameMap) {
         if(dest instanceof Register && renameMap.containsKey(dest))
             dest = renameMap.get(dest);
+        if(dest == null || src == null)
+            System.err.println("DARRELL");
     }
 
     @Override

@@ -89,17 +89,46 @@ public class StackFrameBuilder {
         }
 
         /*
+            save caller save registers before call
+         */
+        for(BasicBlock bb : function.basicblocks) {
+            for(IRInstruction inst = bb.head; inst != null; inst = inst.next) {
+                if(!(inst instanceof Call)) continue;
+                Call call = (Call)inst;
+                HashSet<PhysicalRegister> needToSave = new HashSet<>(call.func.recursiveUsedPhysicalRegisters);
+                needToSave.retainAll(X86RegisterSet.callerSave);
+                needToSave.retainAll(function.usedPhysicalRegisters);
+                needToSave.remove(X86RegisterSet.rax);
+                for(int i = 0; i < call.args.size() && i < 6; i++)
+                    needToSave.remove(X86RegisterSet.args.get(i));
+                for(PhysicalRegister reg : needToSave)
+                    inst.prepend(new Push(bb, reg));
+                for(PhysicalRegister reg : needToSave)
+                    inst.append(new Pop(bb, reg));
+                for(int i = 0; i < needToSave.size(); i++)
+                    inst = inst.next;
+            }
+        }
+
+        /*
             add prologue
          */
         IRInstruction headInst = function.enterBB.head;
         headInst.prepend(new Push(headInst.bb, X86RegisterSet.rbp));
         headInst.prepend(new Move(headInst.bb, X86RegisterSet.rbp, X86RegisterSet.rsp));
         headInst.prepend(new BinaryInst(headInst.bb, BinaryInst.BinaryOp.SUB, X86RegisterSet.rsp, new Immediate(frame.getFrameSize())));
+        HashSet<PhysicalRegister> needToSave = new HashSet<>(function.usedPhysicalRegisters);
+        needToSave.retainAll(X86RegisterSet.calleeSave);
+        for(PhysicalRegister pr : needToSave)
+            headInst.append(new Push(headInst.bb, pr));
 
         /*
             handle ret
          */
         Return ret = (Return)function.leaveBB.tail;
+        for(PhysicalRegister pr : needToSave)
+            ret.prepend(new Pop(ret.bb, pr));
+        ret.prepend(new Leave(ret.bb));
     }
 
     public void run() {

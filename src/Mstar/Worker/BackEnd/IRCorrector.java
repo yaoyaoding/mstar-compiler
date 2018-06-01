@@ -99,7 +99,7 @@ public class IRCorrector implements IIRVisitor {
             inst.prepend(new Move(inst.bb, vr, inst.src));
             inst.src = vr;
         }  else {
-            if(Config.useNaiveAllocator) {
+            if(Config.allocator == Config.Allocator.NaiveAllocator) {
                 PhysicalRegister pdest = getPhysical(inst.dest);
                 PhysicalRegister psrc = getPhysical(inst.src);
                 if(pdest != null && inst.src instanceof Memory) {
@@ -174,7 +174,6 @@ public class IRCorrector implements IIRVisitor {
             inst.prepend(new Move(inst.bb, IRBuilder.vargRegs[i], inst.args.get(i)));
             inst.prev.accept(this);
         }
-        inst.args.clear();
         for(VariableSymbol vs : callerUsed) {
             if(calleeUsed.contains(vs)) {
                 inst.append(new Move(inst.bb, vs.virtualRegister, vs.virtualRegister.spillPlace));

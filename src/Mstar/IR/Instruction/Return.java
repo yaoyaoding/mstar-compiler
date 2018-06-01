@@ -2,10 +2,8 @@ package Mstar.IR.Instruction;
 
 import Mstar.IR.BasicBlock;
 import Mstar.IR.IIRVisitor;
-import Mstar.IR.Operand.Memory;
-import Mstar.IR.Operand.Operand;
-import Mstar.IR.Operand.Register;
-import Mstar.IR.Operand.StackSlot;
+import Mstar.IR.Operand.*;
+import Mstar.Worker.BackEnd.IRBuilder;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -26,7 +24,12 @@ public class Return extends IRInstruction {
     public LinkedList<Register> getDefRegs() { return new LinkedList<>(); }
 
     @Override
-    public LinkedList<Register> getUseRegs() { return new LinkedList<>(); }
+    public LinkedList<Register> getUseRegs() {
+        LinkedList<Register> regs = new LinkedList<>();
+        if(bb.function.hasReturnValue)
+            regs.add(IRBuilder.vrax);
+        return regs;
+    }
 
     @Override
     public LinkedList<StackSlot> getStackSlots() { return new LinkedList<>(); }

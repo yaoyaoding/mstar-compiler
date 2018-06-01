@@ -13,8 +13,8 @@ public class BasicBlock {
     public IRInstruction head;
     public IRInstruction tail;
 
-    LinkedList<BasicBlock> frontiers = null;
-    LinkedList<BasicBlock> successors = null;
+    public LinkedList<BasicBlock> frontiers = null;
+    public LinkedList<BasicBlock> successors = null;
 
     public BasicBlock(Function function, String hint) {
         this.function = function;
