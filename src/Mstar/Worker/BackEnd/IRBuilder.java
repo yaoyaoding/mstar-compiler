@@ -36,7 +36,7 @@ public class IRBuilder implements IAstVisitor {
     private boolean isInParameter;
     private boolean isInClassDeclaration;
     private boolean isInInline;
-    private HashMap<VariableSymbol,VirtualRegister> inlineVariableRegister;
+    private LinkedList<HashMap<VariableSymbol,VirtualRegister>> inlineVariableRegisterStack;
 
 
     private static Function library_print;
@@ -66,7 +66,7 @@ public class IRBuilder implements IAstVisitor {
         this.assignToMap = new HashMap<>();
         this.isInParameter = false;
         this.isInClassDeclaration = false;
-        this.inlineVariableRegister = new HashMap<>();
+        this.inlineVariableRegisterStack = new LinkedList<>();
         initLibraryFunctions();
     }
 
@@ -465,7 +465,7 @@ public class IRBuilder implements IAstVisitor {
             operand = new Memory(curThisPointer, new Immediate(offset));
         } else {
             if(isInInline) {
-                operand = inlineVariableRegister.get(node.symbol);
+                operand = inlineVariableRegisterStack.getLast().get(node.symbol);
             } else {
                 operand = node.symbol.virtualRegister;
             }
@@ -660,48 +660,30 @@ public class IRBuilder implements IAstVisitor {
         }
     }
 
-    private boolean hasFuncCall(Expression e) {
-        if( e instanceof  FuncCallExpression ) {
-            return true;
-        }
-        if( e instanceof  NewExpression ) {
-            return true;
-        }
-        if( e instanceof  UnaryExpression ){
-            return hasFuncCall(((UnaryExpression) e).expression);
-        }
-        if( e instanceof  MemberExpression ){
-            return ((MemberExpression) e).methodCall != null;
-        }
-        if( e instanceof  BinaryExpression ){
-            return hasFuncCall(((BinaryExpression) e).lhs) || hasFuncCall(((BinaryExpression) e).rhs);
-        }
-        if( e instanceof  TernaryExpression ){
-            return hasFuncCall(((TernaryExpression) e).condition)
-                    || hasFuncCall(((TernaryExpression) e).exprTrue) || hasFuncCall(((TernaryExpression) e).exprFalse);
-        }
-        return false;
-    }
-
     private boolean deserveInline(String name) {
+        if(name.equals("xorshift")) {
+            name = name;
+        }
         if(!Config.useSimpleInline) return false;
-        if(!funcDeclarationMap.containsKey(name))
+        if(!funcDeclarationMap.containsKey(name))   //  library function
             return false;
         FuncDeclaration funcDeclaration = funcDeclarationMap.get(name);
-        if(!funcDeclaration.symbol.usedGlobalVariables.isEmpty()) return false;
+        if(!funcDeclaration.symbol.usedGlobalVariables.isEmpty())   //  used global variable
+            return false;
+        if(!funcDeclaration.symbol.isGlobalFunction)    //  is a method
+            return false;
         List<Statement> body = funcDeclaration.body;
         if(body.size() != 1) return false;
         if(!(body.get(0) instanceof ReturnStatement)) return false;
         ReturnStatement returnStatement = (ReturnStatement) body.get(0);
         Expression expression = returnStatement.retExpression;
-        if(hasFuncCall(expression)) return false;
-        return !isBoolType(expression.type);
+        return !isBoolType(expression.type) && !isVoidType(expression.type);
     }
     private Operand doInline(String name, LinkedList<Operand> arguments) {
         FuncDeclaration funcDeclaration = funcDeclarationMap.get(name);
+        boolean oldIsInline = isInInline;
         isInInline = true;
-        inlineVariableRegister.clear();
-        VirtualRegister oldThisPointer = null;
+        inlineVariableRegisterStack.addLast(new HashMap<>());
         FunctionSymbol functionSymbol = funcDeclaration.symbol;
         LinkedList<VirtualRegister> vrArguments = new LinkedList<>();
         for(Operand op : arguments) {
@@ -713,26 +695,13 @@ public class IRBuilder implements IAstVisitor {
                 vrArguments.add(vr);
             }
         }
-        if(!functionSymbol.isGlobalFunction) {
-            oldThisPointer = curThisPointer;
-            curThisPointer = vrArguments.get(0);
-        }
-        for(int i = 0; i < funcDeclaration.parameters.size(); i++) {
-            int delta = functionSymbol.isGlobalFunction ? 0 : 1;
-            inlineVariableRegister.put(funcDeclaration.parameters.get(i).symbol, vrArguments.get(i + delta));
-        }
-
+        for(int i = 0; i < funcDeclaration.parameters.size(); i++)
+            inlineVariableRegisterStack.getLast().put(funcDeclaration.parameters.get(i).symbol, vrArguments.get(i));
         ReturnStatement returnStatement = (ReturnStatement)funcDeclaration.body.get(0);
-
         returnStatement.retExpression.accept(this);
-
-        Operand result = null;
-        if(!isVoidType(functionSymbol.returnType))
-            result = exprResultMap.get(returnStatement.retExpression);
-
-        if(!functionSymbol.isGlobalFunction)
-            curThisPointer = oldThisPointer;
-        isInInline = false;
+        Operand result = exprResultMap.get(returnStatement.retExpression);
+        inlineVariableRegisterStack.removeLast();
+        isInInline = oldIsInline;
 
         return result;
     }
@@ -862,9 +831,6 @@ public class IRBuilder implements IAstVisitor {
             case "&": bop = BinaryInst.BinaryOp.AND; isRevertable = true; break;
             case "|": bop = BinaryInst.BinaryOp.OR; isRevertable = true; break;
             case "^": bop = BinaryInst.BinaryOp.XOR; isRevertable = true; break;
-        }
-        if(op.equals("%")) {
-            System.err.println("DARRELL");
         }
         lhs.accept(this);
         rhs.accept(this);
