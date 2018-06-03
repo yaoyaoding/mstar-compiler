@@ -213,10 +213,14 @@ public class OutputIrrelevantEliminator implements IAstVisitor {
     }
 
     @Override
-    public void visit(ContinueStatement node) { }
+    public void visit(ContinueStatement node) {
+        if(initSymbolStage) initSet(node);
+    }
 
     @Override
-    public void visit(BreakStatement node) { }
+    public void visit(BreakStatement node) {
+        if(initSymbolStage) initSet(node);
+    }
 
     @Override
     public void visit(ReturnStatement node) {
@@ -399,8 +403,6 @@ public class OutputIrrelevantEliminator implements IAstVisitor {
 
     @Override
     public void visit(EmptyStatement node) {
-        if(initSymbolStage) {
-            initSet(node);
-        }
+        if(initSymbolStage) initSet(node);
     }
 }

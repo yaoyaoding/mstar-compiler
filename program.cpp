@@ -1,22 +1,69 @@
-int main()
+int N;
+int head;
+int startx;
+int starty;
+int targetx;
+int targety;
+int x;
+int y;
+int[] xlist = new int[12000];
+int[] ylist = new int[12000];
+int tail;
+int ok;
+int now;
+int[][] step;
+int i;
+int j;
+
+void origin(int N)
 {
-    int k;
-    k = getInt();
-    print("p cnf ");
-    println(toString(k * 2 + 1) + " " + toString(k));
-    int i;
-    int last;
-    last = 1;
-    string t;
-    for(i = 0; i < k; ++i)
-    {
-        t = toString(last) + " " + toString(last + 1) + " " + toString(-(last + 2));
-        if(i % 100000 == 0)
-        {
-            println(t);
-        }
-        last = last + 2;
+	step = new int[N][];
+    for (i = 0; i < N; i ++ ) {
+		step[i] = new int[N];
+        for (j = 0; j < N; j ++ )
+        step[i][j] = 0;
     }
+}
+
+bool check(int a, int N) {
+    return ((a < N) && (a >= 0));
+}
+
+void addList(int x, int y) {
+    if (check(x, N) && check(y, N) && step[x][y] == -1) {
+        tail = tail + 1;
+        xlist[tail] = x;
+        ylist[tail] = y;
+        step[x][y] = now + 1;
+        if ((x == targetx) && (y == targety)) ok = 1;
+    }
+}
+
+int main() {
+	origin(106);
+    N = getInt();
+    targety  = N - 1;
+    targetx = targety;
+    for (i = 0; i < N; i ++)
+        for (j = 0; j < N; j ++)
+        step[i][j] = -1;
+    while (head <= tail) {
+        x = xlist[head];
+        y = ylist[head];
+        now = step[x][y];
+        addList(x-1, y-2);
+        addList(x-1, y+2);
+        addList(x+1, y-2);
+        addList(x+1, y+2);
+        addList(x-2, y-1);
+        addList(x-2, y+1);
+        addList(x+2, y-1);
+        addList(x+2, y+1);
+        if (ok == 1) break;
+        head = head + 1;
+    }
+    if (ok == 1) println(toString(step[targetx][targety]));
+    else print("no solution!\n");
     return 0;
 }
 
@@ -24,31 +71,19 @@ int main()
 
 /*!! metadata:
 === comment ===
-print_cnf-5140309234-xietiancheng.txtprint a 3-cnf, fast built in function
-=== is_public ===
-True
+horse-5100309153-yanghuan.mx
+=== input ===
+101
 === assert ===
 output
 === timeout ===
-3.0
-=== input ===
-1000000
-=== phase ===
-optim pretest
+0.3
 === output ===
-p cnf 2000001 1000000
-1 2 -3
-200001 200002 -200003
-400001 400002 -400003
-600001 600002 -600003
-800001 800002 -800003
-1000001 1000002 -1000003
-1200001 1200002 -1200003
-1400001 1400002 -1400003
-1600001 1600002 -1600003
-1800001 1800002 -1800003
-=== exitcode ===
-
+67
+=== phase ===
+codegen pretest
+=== is_public ===
+True
 
 !!*/
 
