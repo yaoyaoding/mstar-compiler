@@ -184,6 +184,7 @@ public class OutputIrrelevantEliminator implements IAstVisitor {
             addDependence(node, node.body);
         } else if(updateRelevantSet) {
             propgate(node, node.condition);
+            node.body.accept(this);
         } else {
             node.body.accept(this);
         }
@@ -203,6 +204,7 @@ public class OutputIrrelevantEliminator implements IAstVisitor {
             }
         } else if(updateRelevantSet) {
             propgate(node, node.condition);
+            node.condition.accept(this);
             node.thenStatement.accept(this);
             if(node.elseStatement != null) node.elseStatement.accept(this);
         } else {
@@ -273,6 +275,7 @@ public class OutputIrrelevantEliminator implements IAstVisitor {
             node.expression.accept(this);
             addDependence(node, node.expression);
         } else if(updateRelevantSet) {
+            propgate(node, node.expression);
             node.expression.accept(this);
         }
     }
@@ -320,6 +323,9 @@ public class OutputIrrelevantEliminator implements IAstVisitor {
                 addDependence(node, expression);
             }
             symbolRelevantSet.addAll(usedSymbols.get(node));
+        } else if(updateRelevantSet) {
+            for(Expression expression : node.arguments)
+                expression.accept(this);
         }
     }
 
@@ -345,9 +351,20 @@ public class OutputIrrelevantEliminator implements IAstVisitor {
             initSet(node);
             node.object.accept(this);
             addDependence(node, node.object);
+            if(node.methodCall != null) {
+                node.methodCall.accept(this);
+                addDependence(node, node.methodCall);
+            } else {
+                node.fieldAccess.accept(this);
+                addDependence(node, node.fieldAccess);
+            }
         } else {
-            propgate(node, node.object);
+            propgate(node, node.object, node.methodCall, node.fieldAccess);
             node.object.accept(this);
+            if(node.methodCall != null)
+                node.methodCall.accept(this);
+            else
+                node.fieldAccess.accept(this);
         }
     }
 
