@@ -908,451 +908,82 @@ L_033:
 
 ;=====================================================================
 	 section .text
-_add:
+_func:
 	b0:
 	push rbp
 	mov rbp, rsp
-	mov rax, rdi
-	mov rcx, rsi
-	add rax, rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	b1:
-	leave
-	ret 
-_dp:
-	b2:
-	push rbp
-	mov rbp, rsp
 	push r13
-	push r15
+	push r14
 	push r12
-	push rbx
-	push rdi
-	mov r12, rdi
-	mov rsi, r12
-	mov rdi, _dp
-	call __hasValue
-	pop rdi
-	cmp rax, 0
-	jne b3
-	b4:
-	mov rbx, rdi
-	cmp rbx, 1
-	jle b5
-	b6:
-	mov r15, 0
-	mov r13, 2
-	b7:
-	cmp r13, rbx
-	jle b8
-	b9:
-	mov rax, r15
-	jmp b10
-	b8:
-	mov rax, rbx
-	xor rax, r13
-	cmp rax, rbx
-	jl b11
-	jmp b12
-	b11:
-	mov rax, rbx
-	xor rax, r13
-	mov rdi, rax
-	call _dp
-	mov rcx, rax
-	mov rax, r15
-	add rax, rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov r15, rax
-	b12:
-	b13:
+	mov r13, rdi
 	mov rax, r13
-	inc r13
-	jmp b7
-	b5:
-	mov rax, 7
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	mov rcx, 7
-	imul rcx
-	cdq
-	mov rcx, 233
-	idiv rcx
-	mov rax, rdx
-	jmp b10
+	and rax, 3
+	mov r12, rax
+	cmp r12, 0
+	je b1
+	b2:
+	mov rax, r13
+	sub rax, r12
+	mov rdi, rax
+	call _func
+	mov r14, rax
+	mov rax, r13
+	add rax, r12
+	mov rdi, rax
+	call _func
+	mov rcx, rax
+	mov rax, r14
+	add rax, rcx
+	and rax, 65535
+	jmp b3
+	b1:
+	mov rax, r13
 	b3:
-	mov rsi, r12
-	mov rdi, _dp
-	call __getValue
-	b10:
-	mov rdx, rax
-	mov rsi, r12
-	mov rdi, _dp
-	call __setValue
-	pop rbx
 	pop r12
-	pop r15
+	pop r14
 	pop r13
 	leave
 	ret 
 _main:
-	b14:
+	b4:
 	push rbp
 	mov rbp, rsp
+	push r13
+	push r14
 	push r12
-	push rbx
 	call __getInt
-	mov rbx, rax
-	mov r12, 1
-	b15:
-	cmp r12, rbx
-	jle b16
-	b17:
-	mov rax, 0
-	b18:
-	pop rbx
-	pop r12
-	leave
-	ret 
-	b16:
-	mov rdi, r12
-	call _dp
-	mov rdi, rax
+	mov r14, rax
+	mov r13, 0
+	mov r12, 0
+	b5:
+	cmp r12, r14
+	jl b6
+	b7:
+	mov rdi, r13
 	call __toString
 	mov rdi, rax
 	call __println
-	b19:
+	mov rax, 0
+	b8:
+	pop r12
+	pop r14
+	pop r13
+	leave
+	ret 
+	b6:
+	mov rdi, r12
+	call _func
+	mov rcx, r13
+	add rcx, rax
+	mov rax, rcx
+	and rax, 65535
+	mov r13, rax
+	b9:
 	mov rax, r12
 	inc r12
-	jmp b15
+	jmp b5
 __init:
-	b20:
+	b10:
 	push rbp
 	mov rbp, rsp
 	call _main
