@@ -8,6 +8,7 @@ public class Config {
     };
 
     public static boolean useSimpleInline = true;
+    public static boolean useBackupOptimization = true;
 
     public static Allocator allocator = Allocator.SimpleGraphAllocator;
     public static boolean printAST = false;

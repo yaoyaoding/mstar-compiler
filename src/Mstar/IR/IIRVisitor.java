@@ -26,4 +26,5 @@ public interface IIRVisitor {
     void visit(Call inst);
     void visit(Leave inst);
     void visit(Cdq inst);
+    void visit(FunctionAddress operand);
 }

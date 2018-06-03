@@ -13,9 +13,7 @@ import Mstar.Symbol.*;
 
 import java.util.*;
 
-import static Mstar.IR.RegisterSet.vrax;
-import static Mstar.IR.RegisterSet.vrcx;
-import static Mstar.IR.RegisterSet.vrdx;
+import static Mstar.IR.RegisterSet.*;
 
 
 public class IRBuilder implements IAstVisitor {
@@ -48,6 +46,9 @@ public class IRBuilder implements IAstVisitor {
     private static Function library_string_substring;
     private static Function library_string_parseInt;
     private static Function library_string_ord;
+    private static Function library_hasValue;
+    private static Function library_getValue;
+    private static Function library_setValue;
     private static Function library_stringConcate;
     private static Function library_stringCompare;
     private static Function external_malloc;
@@ -94,6 +95,10 @@ public class IRBuilder implements IAstVisitor {
 
         library_stringConcate = new Function(Function.Type.Library, "stringConcate", true);
         library_stringCompare = new Function(Function.Type.Library, "stringCompare", true);
+        library_hasValue = new Function(Function.Type.Library, "hasValue", true);
+        library_getValue = new Function(Function.Type.Library, "getValue", true);
+        library_setValue = new Function(Function.Type.Library, "setValue", true);
+
 
         library_init = new Function(Function.Type.Library, "init", true);
 
@@ -103,6 +108,9 @@ public class IRBuilder implements IAstVisitor {
 
     private boolean isVoidType(VariableType type) {
         return type instanceof PrimitiveType && ((PrimitiveType) type).name.equals("void");
+    }
+    private boolean isIntType(VariableType type) {
+        return type instanceof PrimitiveType && ((PrimitiveType) type).name.equals("int");
     }
     private boolean isBoolType(VariableType type) {
         return type instanceof PrimitiveType && ((PrimitiveType) type).name.equals("bool");
@@ -166,8 +174,43 @@ public class IRBuilder implements IAstVisitor {
                 func.finishBuild();
         }
 
+        /* add back opt */
+        for(FuncDeclaration funcDeclaration : node.functions)
+            if(deserveBackOptimization(funcDeclaration))
+                addValueBackOptimizeCode(funcDeclaration);
+
+
         /* init function used to initialize global variables */
         buildInitFunction(node);
+    }
+
+    private boolean deserveBackOptimization(FuncDeclaration funcDeclaration) {
+        Function function = functionMap.get(funcDeclaration.symbol.name);
+        return  Config.useBackupOptimization
+                && funcDeclaration.symbol.isGlobalFunction
+                && !function.hasOutput
+                && function.recursiveUsedGlobalVariables.isEmpty()
+                && function.parameters.size() == 1
+                && isIntType(funcDeclaration.parameters.get(0).symbol.type);
+    }
+
+    private void addValueBackOptimizeCode(FuncDeclaration funcDeclaration) {
+        if(!deserveBackOptimization(funcDeclaration)) return;
+        Function function = functionMap.get(funcDeclaration.symbol.name);
+        BasicBlock bb = new BasicBlock(function, "backopt_entry");
+        BasicBlock hitBB = new BasicBlock(function, "backopt_hit");
+        VirtualRegister argu = new VirtualRegister("");
+        bb.append(new Push(bb, vrdi));
+        bb.append(new Move(bb, argu, vrdi));
+        bb.append(new Call(bb, vrax, library_hasValue, new FunctionAddress(function), argu));
+        bb.append(new Pop(bb, vrdi));
+        bb.append(new CJump(bb, vrax, CJump.CompareOp.NE, new Immediate(0), hitBB, function.enterBB));
+        hitBB.append(new Call(hitBB, vrax, library_getValue, new FunctionAddress(function), argu));
+        hitBB.append(new Jump(hitBB, function.leaveBB));
+        BasicBlock leaveBB = function.leaveBB;
+        leaveBB.prepend(new Call(leaveBB, vrax, library_setValue, new FunctionAddress(function), argu, vrax));
+        function.enterBB = bb;
+        function.finishBuild();
     }
 
     @Override
@@ -247,23 +290,21 @@ public class IRBuilder implements IAstVisitor {
                     returnInsts.add((Return) inst);
             }
         }
-        if(returnInsts.size() > 1) {
-            BasicBlock leaveBB = new BasicBlock(curFunction, "leaveBB");
-            for(Return retInst : returnInsts) {
-                retInst.prepend(new Jump(retInst.bb, leaveBB));
-                retInst.remove();
-            }
-            leaveBB.append(new Return(leaveBB));
-            curFunction.leaveBB = leaveBB;
-        } else {
-            curFunction.leaveBB = curBB;
+
+        BasicBlock leaveBB = new BasicBlock(curFunction, "leaveBB");
+        for(Return retInst : returnInsts) {
+            retInst.prepend(new Jump(retInst.bb, leaveBB));
+            retInst.remove();
         }
+        leaveBB.append(new Return(leaveBB));
+        curFunction.leaveBB = leaveBB;
 
         /* save global variable */
         IRInstruction retInst = curFunction.leaveBB.tail;
         for(VariableSymbol vr : node.symbol.usedGlobalVariables) {
             retInst.prepend(new Move(retInst.bb, vr.virtualRegister.spillPlace, vr.virtualRegister));
         }
+
 
         functionMap.put(node.symbol.name,curFunction);
         irProgram.functions.add(curFunction);

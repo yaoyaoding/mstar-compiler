@@ -5,10 +5,8 @@ import Mstar.IR.Function;
 import Mstar.IR.IIRVisitor;
 import Mstar.IR.Operand.*;
 import Mstar.IR.RegisterSet;
-import Mstar.Worker.BackEnd.IRBuilder;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 
@@ -17,23 +15,25 @@ public class Call extends IRInstruction {
     public Function func;
     public LinkedList<Operand> args;
 
-    private void addCalleeFunction() {
+    private void update() {
         Function caller = super.bb.function;
         caller.callee.add(func);
+        if(func.name.equals("println") || func.name.equals("print"))
+            super.bb.function.hasOutput = true;
     }
     public Call(BasicBlock bb, Address dest, Function func, Operand... args) {
         super(bb);
         this.dest = dest;
         this.func = func;
         this.args = new LinkedList<>(Arrays.asList(args));
-        addCalleeFunction();
+        update();
     }
     public Call(BasicBlock bb, Address dest, Function func, LinkedList<Operand> args) {
         super(bb);
         this.dest = dest;
         this.func = func;
         this.args = new LinkedList<>(args);
-        addCalleeFunction();
+        update();
     }
 
     @Override

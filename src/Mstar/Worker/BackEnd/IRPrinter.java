@@ -417,4 +417,9 @@ public class IRPrinter implements IIRVisitor {
     public void visit(Cdq inst) {
         append("\tcdq\n");
     }
+
+    @Override
+    public void visit(FunctionAddress operand) {
+        append(getNasmFunctionName(operand.function));
+    }
 }

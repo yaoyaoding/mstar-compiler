@@ -1,81 +1,104 @@
-int hilo(int hi, int lo)
-{
-	return lo | (hi << 16);
-}
 
-int shift_l(int x, int n)
-{
-    return (x << n) & hilo(32767, 65535);	// 0x7fff ffff
-}
 
-int shift_r(int x, int n)
-{
-	return ((((hilo(32767, 65536) >> n) << 1 + 1) + 1) & (x >> n)) & hilo(32767, 65535);
-}
+int add(int x,int y){return (x+y)%233;}
 
-int xorshift(int seed, int num)
-{
-	int x = seed + 1;
+int dp(int x){
+	if(x<=1){
+		int tmp=7%233*7%233*7%233*7%233*7%233*7%233*7%233
+			*7%233*7%233*7%233*7%233*7%233*7%233*7%233*7%233
+			*7%233*7%233*7%233*7%233*7%233*7%233*7%233*7%233
+			*7%233*7%233*7%233*7%233*7%233*7%233*7%233*7%233
+			*7%233*7%233*7%233*7%233*7%233*7%233*7%233*7%233
+			*7%233*7%233*7%233*7%233*7%233*7%233*7%233*7%233
+			*7%233*7%233*7%233*7%233*7%233*7%233*7%233*7%233;
+		return tmp;
+	}
+	int sum=0;
 	int i;
-
-	for(i=0; i<num * 10; i++)
-	{
-		x = x ^ shift_l(x, 13);
-		x = x ^ shift_r(x, 17);
-		x = x ^ shift_l(x, 5);
-	}
-
-	return x ^ 123456789;
+	for(i=2;i<=x;i++)if((x^i)<x)
+		sum=add(sum,dp(x^i));
+	return sum;
 }
 
-
-int main() {
-	int n = getInt();
-	int i; int j; int k;
-	int [][] f = new int[n][n];
-	for (i = 0; i < n; ++i) {
-		for (j = 0; j < n; ++j) {
-			for (k = 0; k < n; ++k) {
-				if (i > 0 && j > 0 && k > 0)
-				{
-					if (i % j != j % k && j % k != k % i && i % j != k % i)
-					{
-						f[i][j] = xorshift(i & j & k, i + j + k);
-					}
-				}
-			}
-		}
-	}
-	int sum = 0;
-	for (i = 0; i < n; ++i) {
-		for (j = 0; j < n; ++j) {
-			for (k = 0; k < n; ++k) {
-				if (i >= j && j >= k) {
-					sum = (sum + f[i][j]) & ((1 << 30) - 1);
-				}
-			}
-		}
-	}
-	println("Ans is " + toString(sum));
-    return 0;
+int main(){
+	int i;
+	int n=getInt();
+	for(i=1;i<=n;i++)
+		println(toString(dp(i)));
+	return 0;
 }
 
 /*!! metadata:
 === comment ===
-王天哲 Test for register allocate, function inline // 516030910591
+张凯羿 inline,constant folding,recursion - 张凯羿
 === is_public ===
 True
 === assert ===
 output
 === timeout ===
-10.0
+5.0
 === input ===
-80
+55
 === phase ===
-optim extended
+optim pretest
 === output ===
-Ans is 915763225
+36
+36
+72
+36
+72
+19
+55
+36
+72
+19
+55
+167
+203
+179
+215
+36
+72
+19
+55
+167
+203
+179
+215
+64
+100
+103
+139
+186
+222
+3
+39
+36
+72
+19
+55
+167
+203
+179
+215
+64
+100
+103
+139
+186
+222
+3
+39
+145
+181
+113
+149
+216
+19
+93
+129
 === exitcode ===
 0
 
 !!*/
+

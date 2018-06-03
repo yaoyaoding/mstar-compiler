@@ -21,13 +21,20 @@ public class BasicBlock {
         this.hint = hint;
         this.frontiers = new LinkedList<>();
         this.successors = new LinkedList<>();
-        function.basicblocks.add(this);
+        try {
+            function.basicblocks.add(this);
+        } catch (Exception e) {
+            throw e;
+        }
     }
 
     public boolean isEnded() {
         return tail instanceof Return || tail instanceof Jump || tail instanceof CJump;
     }
 
+    public void prepend(IRInstruction inst) {
+        head.prepend(inst);
+    }
     public void append(IRInstruction inst) {
         if(tail instanceof CJump || tail instanceof Jump || tail instanceof Return)
             return;

@@ -25,6 +25,45 @@ int main() {
     return __init();
 }
 
+#define Mod 107
+#define N 210
+
+int64_t __real_addr[Mod] = {0};
+int64_t __has[Mod][N] = {0};
+int64_t __value[Mod][N] = {0};
+
+int64_t __hasValue(int64_t addr, int64_t n) {
+    int64_t key = addr % Mod;
+  //  printf("hasValue(%ld, %ld) ", addr, n);
+    if(__real_addr[key] == addr && 0 <= n && n < N) {
+ //       printf("YES\n");
+        return __has[key][n];
+    }
+//    printf("NO\n");
+    return 0;
+}
+
+int64_t __getValue(int64_t addr, int64_t n) {
+    return __value[addr % Mod][n];
+}
+
+int64_t __setValue(int64_t addr, int64_t n, int64_t val) {
+    if(n < 0 || n >= N) return;
+    int64_t key = addr % Mod;
+    if(__real_addr[key] != addr) {
+        if(__real_addr[key] == 0)
+            __real_addr[key] = addr;
+        else {
+			int i;
+            for(i = 0; i < N; i++)
+                __has[key][i] = 0;
+        }
+    }
+    __has[key][n] = 1;
+    __value[key][n] = val;
+    return val;
+}
+
 void __print(pointer_t str) {
 	printf("%s", str + 8);
 }

@@ -16,6 +16,7 @@ public class Function {
     public Type type;
     public String name;
     public boolean hasReturnValue;
+    public boolean hasOutput;
     public BasicBlock enterBB;
     public BasicBlock leaveBB;
     public LinkedList<BasicBlock> basicblocks;
@@ -37,6 +38,7 @@ public class Function {
         this.type = type;
         this.name = name;
         this.hasReturnValue = hasReturnValue;
+        this.hasOutput = false;
         this.basicblocks = new LinkedList<>();
         this.reversePostOrder = new LinkedList<>();
         this.reversePostOrderOnReverseCFG = new LinkedList<>();
@@ -85,6 +87,10 @@ public class Function {
     public void finishBuild() {
         /* calculate the successors and frontiers of all BasicBlocks*/
         for(BasicBlock bb : basicblocks) {
+            bb.successors.clear();
+            bb.frontiers.clear();
+        }
+        for(BasicBlock bb : basicblocks) {
             if(bb.tail instanceof CJump) {
                 bb.successors.add(((CJump) bb.tail).thenBB);
                 bb.successors.add(((CJump) bb.tail).elseBB);
@@ -98,10 +104,12 @@ public class Function {
 
         /* calculate reversed post order on CFG */
         visitedBasicBlocks.clear();
+        reversePostOrder.clear();
         dfsReversePostOrder(enterBB);
 
         /* calculate reversed post order on reversed CFG */
         visitedBasicBlocks.clear();
+        reversePostOrderOnReverseCFG.clear();
         dfsReversePostOrderOnReversedCFG(leaveBB);
 
         /* calculate the recursive used global variables*/

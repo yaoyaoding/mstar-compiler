@@ -180,11 +180,13 @@ public class IRCorrector implements IIRVisitor {
 
     @Override
     public void visit(Leave inst) {
-
     }
 
     @Override
     public void visit(Cdq inst) {
+    }
 
+    @Override
+    public void visit(FunctionAddress operand) {
     }
 }
