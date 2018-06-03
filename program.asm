@@ -908,85 +908,109 @@ L_033:
 
 ;=====================================================================
 	 section .text
-_func:
+_main:
 	b0:
 	push rbp
 	mov rbp, rsp
-	push r13
 	push r14
 	push r12
-	mov r13, rdi
-	mov rax, r13
-	and rax, 3
-	mov r12, rax
-	cmp r12, 0
-	je b1
-	b2:
-	mov rax, r13
-	sub rax, r12
-	mov rdi, rax
-	call _func
-	mov r14, rax
-	mov rax, r13
-	add rax, r12
-	mov rdi, rax
-	call _func
-	mov rcx, rax
-	mov rax, r14
-	add rax, rcx
-	and rax, 65535
-	jmp b3
-	b1:
-	mov rax, r13
-	b3:
-	pop r12
-	pop r14
-	pop r13
-	leave
-	ret 
-_main:
-	b4:
-	push rbp
-	mov rbp, rsp
+	push rbx
 	push r13
-	push r14
-	push r12
 	call __getInt
-	mov r14, rax
-	mov r13, 0
-	mov r12, 0
-	b5:
-	cmp r12, r14
-	jl b6
-	b7:
+	mov r13, rax
+	mov rdi, g_0
+	call __print
+	mov rax, r13
+	mov rcx, 2
+	imul rcx
+	add rax, 1
+	mov rdi, rax
+	call __toString
+	mov rsi, g_1
+	mov rdi, rax
+	call __stringConcate
+	mov rbx, rax
 	mov rdi, r13
 	call __toString
+	mov rsi, rax
+	mov rdi, rbx
+	call __stringConcate
 	mov rdi, rax
 	call __println
+	mov r12, 1
+	mov r14, 0
+	b1:
+	cmp r14, r13
+	jl b2
+	b3:
 	mov rax, 0
-	b8:
+	b4:
+	pop r13
+	pop rbx
 	pop r12
 	pop r14
-	pop r13
 	leave
 	ret 
-	b6:
+	b2:
 	mov rdi, r12
-	call _func
-	mov rcx, r13
-	add rcx, rax
-	mov rax, rcx
-	and rax, 65535
-	mov r13, rax
-	b9:
+	call __toString
+	mov rsi, g_2
+	mov rdi, rax
+	call __stringConcate
+	mov rbx, rax
 	mov rax, r12
-	inc r12
-	jmp b5
+	add rax, 1
+	mov rdi, rax
+	call __toString
+	mov rsi, rax
+	mov rdi, rbx
+	call __stringConcate
+	mov rsi, g_3
+	mov rdi, rax
+	call __stringConcate
+	mov rbx, rax
+	mov rax, r12
+	add rax, 2
+	neg rax
+	mov rdi, rax
+	call __toString
+	mov rsi, rax
+	mov rdi, rbx
+	call __stringConcate
+	mov rcx, rax
+	mov rax, r14
+	cdq
+	mov rsi, 100000
+	idiv rsi
+	mov rax, rdx
+	cmp rax, 0
+	je b5
+	jmp b6
+	b5:
+	mov rdi, rcx
+	call __println
+	b6:
+	add r12, 2
+	b7:
+	inc r14
+	jmp b1
 __init:
-	b10:
+	b8:
 	push rbp
 	mov rbp, rsp
 	call _main
 	leave
 	ret 
 	section .data
+g_0:
+	dq 6
+	db 70H, 20H, 63H, 6EH, 66H, 20H, 00H
+g_1:
+	dq 1
+	db 20H, 00H
+g_2:
+	dq 1
+	db 20H, 00H
+g_3:
+	dq 1
+	db 20H, 00H

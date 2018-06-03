@@ -7,6 +7,7 @@ public class Config {
         NaiveAllocator, SimpleGraphAllocator, GraphAllocator
     };
 
+    public static boolean useOutputIrrelevantElimination = true;
     public static boolean useSimpleInline = true;
     public static boolean useBackupOptimization = true;
 

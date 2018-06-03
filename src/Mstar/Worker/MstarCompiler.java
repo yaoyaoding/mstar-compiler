@@ -84,6 +84,12 @@ public class MstarCompiler {
             exit(1);
         }
 
+        //  output irrelevant code elimination optimization
+        if(Config.useOutputIrrelevantElimination) {
+            OutputIrrelevantEliminator outputIrrevelantEliminator = new OutputIrrelevantEliminator(astProgram);
+            outputIrrevelantEliminator.run();
+        }
+
         //  AST with Symbol information -> IR with VirtualRegister
         IRBuilder irBuilder = new IRBuilder(globalSymbolTable);
         astProgram.accept(irBuilder);
