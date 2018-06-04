@@ -29,6 +29,7 @@ public class IRPrinter implements IIRVisitor {
     int ssCount = 0;
     int sdCount = 0;
 
+    public boolean showId = false;
     public boolean showBlockHint = false;
     public boolean showNasm = false;
     public boolean showHeader = false;
@@ -59,12 +60,12 @@ public class IRPrinter implements IIRVisitor {
     }
     private String getBasicBlockName(BasicBlock bb) {
         if(!bbNames.containsKey(bb))
-            bbNames.put(bb, "b" + String.valueOf(bbCount++));
+            bbNames.put(bb, "b" + String.valueOf(bbCount++) + (showId ? "(" + bb.blockId + ")": ""));
         return bbNames.get(bb);
     }
     private String getVirtualRegsiterName(VirtualRegister virtualRegister) {
         if(!varNames.containsKey(virtualRegister))
-            varNames.put(virtualRegister, "v" + String.valueOf(varCount++));
+            varNames.put(virtualRegister, "v" + String.valueOf(varCount++) + (showId ? "(" + virtualRegister.id + ")" : ""));
         return varNames.get(virtualRegister);
     }
     private String getStackSlotName(StackSlot ss) {

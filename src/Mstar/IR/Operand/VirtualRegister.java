@@ -7,9 +7,13 @@ public class VirtualRegister extends Register {
     public PhysicalRegister allocatedPhysicalRegister;
     public Memory spillPlace = null;
 
+    private static int globalId = 0;    /* for debug */
+    public int id;
+
     public VirtualRegister(String hint) {
         this.hint = hint;
         this.allocatedPhysicalRegister = null;
+        this.id = globalId++;
     }
     public VirtualRegister(String hint, PhysicalRegister physicalRegister) {
         this.hint = hint;

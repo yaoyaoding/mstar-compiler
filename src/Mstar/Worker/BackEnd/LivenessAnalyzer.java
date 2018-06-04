@@ -3,6 +3,7 @@ package Mstar.Worker.BackEnd;
 import Mstar.IR.BasicBlock;
 import Mstar.IR.Function;
 import Mstar.IR.IRProgram;
+import Mstar.IR.Instruction.Call;
 import Mstar.IR.Instruction.IRInstruction;
 import Mstar.IR.Instruction.Move;
 import Mstar.IR.Operand.Register;
@@ -90,11 +91,16 @@ public class LivenessAnalyzer {
             definedRegisters.put(bb, new HashSet<>());
         }
     }
-    private void initUsedAndDefinedRegisters(BasicBlock bb) {
+    private void initUsedAndDefinedRegisters(BasicBlock bb, boolean nowAfterAllocate) {
         HashSet<VirtualRegister> bbUsedRegisters = new HashSet<>();
         HashSet<VirtualRegister> bbDefinedRegisters = new HashSet<>();
         for(IRInstruction inst = bb.head; inst != null; inst = inst.next) {
-            for(VirtualRegister reg : trans(inst.getUseRegs()))
+            LinkedList<Register> usedRegs;
+            if(inst instanceof Call && !nowAfterAllocate)
+                usedRegs = ((Call) inst).getCallUsed();
+            else
+                usedRegs = inst.getUseRegs();
+            for(VirtualRegister reg : trans(usedRegs))
                 if(!bbDefinedRegisters.contains(reg))
                     bbUsedRegisters.add(reg);
             bbDefinedRegisters.addAll(trans(inst.getDefRegs()));
@@ -120,11 +126,11 @@ public class LivenessAnalyzer {
         return virtualRegisters;
     }
 
-    private void calcLiveOut(Function function) {
+    private void calcLiveOut(Function function, boolean nowAfterAllocate) {
         init(function);
 
         for(BasicBlock bb : function.basicblocks)
-            initUsedAndDefinedRegisters(bb);
+            initUsedAndDefinedRegisters(bb, nowAfterAllocate);
 
         /* calculate the liveOut set of each BasicBlock */
         boolean changed = true;
@@ -145,7 +151,7 @@ public class LivenessAnalyzer {
     }
 
     public HashMap<BasicBlock,HashSet<VirtualRegister>> getLiveOut(Function function) {
-        calcLiveOut(function);
+        calcLiveOut(function, false);
         return liveOut;
     }
 
@@ -153,7 +159,7 @@ public class LivenessAnalyzer {
                                   Graph inferenceGraph,
                                   Graph moveGraph
     ) {
-        calcLiveOut(function);
+        calcLiveOut(function, true);
 
         inferenceGraph.clear();
         if(moveGraph != null)
