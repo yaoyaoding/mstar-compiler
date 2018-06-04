@@ -36,6 +36,18 @@ public class Call extends IRInstruction {
         update();
     }
 
+    public LinkedList<Register> getCallUsed() {
+        LinkedList<Register> registers = new LinkedList<>();
+        for(Operand operand : args) {
+            if(operand instanceof Memory) {
+                registers.addAll(((Memory) operand).getUseRegs());
+            } else if(operand instanceof VirtualRegister) {
+                registers.add((Register) operand);
+            }
+        }
+        return registers;
+    }
+
     @Override
     public LinkedList<Register> getUseRegs() {
         return new LinkedList<>(RegisterSet.vargs.subList(0, Integer.min(6, args.size())));

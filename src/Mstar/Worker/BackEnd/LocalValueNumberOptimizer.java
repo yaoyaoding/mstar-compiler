@@ -7,7 +7,6 @@ import Mstar.IR.IRProgram;
 import Mstar.IR.Instruction.*;
 import Mstar.IR.Operand.*;
 
-import java.net.Inet4Address;
 import java.util.HashMap;
 import java.util.HashSet;
 

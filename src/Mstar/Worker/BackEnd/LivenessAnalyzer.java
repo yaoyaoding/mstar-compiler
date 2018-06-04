@@ -120,27 +120,8 @@ public class LivenessAnalyzer {
         return virtualRegisters;
     }
 
-
-    public HashMap<BasicBlock,HashSet<VirtualRegister>> getLiveOut(Function function) {
-        return null;
-    }
-
-    public void getInferenceGraph(Function function,
-                                  Graph inferenceGraph,
-                                  Graph moveGraph
-    ) {
-        inferenceGraph.clear();
-        if(moveGraph != null)
-            moveGraph.clear();
-
+    private void calcLiveOut(Function function) {
         init(function);
-
-        for(BasicBlock bb : function.basicblocks) {
-            for(IRInstruction inst = bb.head; inst != null; inst = inst.next) {
-                inferenceGraph.addRegisers(trans(inst.getDefRegs()));
-                inferenceGraph.addRegisers(trans(inst.getUseRegs()));
-            }
-        }
 
         for(BasicBlock bb : function.basicblocks)
             initUsedAndDefinedRegisters(bb);
@@ -159,6 +140,29 @@ public class LivenessAnalyzer {
                     liveOut.get(bb).addAll(regs);
                 }
                 changed = changed || liveOut.get(bb).size() != oldSize;
+            }
+        }
+    }
+
+    public HashMap<BasicBlock,HashSet<VirtualRegister>> getLiveOut(Function function) {
+        calcLiveOut(function);
+        return liveOut;
+    }
+
+    public void getInferenceGraph(Function function,
+                                  Graph inferenceGraph,
+                                  Graph moveGraph
+    ) {
+        calcLiveOut(function);
+
+        inferenceGraph.clear();
+        if(moveGraph != null)
+            moveGraph.clear();
+
+        for(BasicBlock bb : function.basicblocks) {
+            for(IRInstruction inst = bb.head; inst != null; inst = inst.next) {
+                inferenceGraph.addRegisers(trans(inst.getDefRegs()));
+                inferenceGraph.addRegisers(trans(inst.getUseRegs()));
             }
         }
 

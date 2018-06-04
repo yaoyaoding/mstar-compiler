@@ -99,8 +99,6 @@ public class MstarCompiler {
             System.err.println("=============================================");
             System.err.println("Intermediate Representation After IR Building");
             IRPrinter irPrinter = new IRPrinter();
-            irPrinter.showBlockHint = false;
-            irPrinter.showNasm = false;
             irPrinter.visit(irProgram);
             irPrinter.printTo(System.err);
         }
@@ -108,12 +106,23 @@ public class MstarCompiler {
         if(Config.useLocalValueNumberOptimization) {
             LocalValueNumberOptimizer localValueNumberOptimizer = new LocalValueNumberOptimizer(irProgram);
             localValueNumberOptimizer.run();
-            if(Config.printIRAfterLocalValueNumberOptmization) {
+            if(Config.printIRAfterLocalValueNumberOptimization) {
                 System.err.println("====================================================================");
                 System.err.println("Intermediate Representation After Local Value Numbering Optimization");
                 IRPrinter irPrinter = new IRPrinter();
-                irPrinter.showBlockHint = true;
-                irPrinter.showNasm = false;
+                irPrinter.visit(irProgram);
+                irPrinter.printTo(System.err);
+            }
+        }
+
+
+        if(Config.useUselessInstructionElimination) {
+            UselessInstructionEliminater uselessInstructionEliminater = new UselessInstructionEliminater(irProgram);
+            uselessInstructionEliminater.run();
+            if(Config.printIRAfterUselessInstructionElimination) {
+                System.err.println("===============================================================");
+                System.err.println("Intermediate Representation After Eliminate Useless Instruction");
+                IRPrinter irPrinter = new IRPrinter();
                 irPrinter.visit(irProgram);
                 irPrinter.printTo(System.err);
             }
@@ -129,8 +138,6 @@ public class MstarCompiler {
             System.err.println("==============================================");
             System.err.println("Intermediate Representation After IR Corrector");
             IRPrinter irPrinter = new IRPrinter();
-            irPrinter.showBlockHint = false;
-            irPrinter.showNasm = false;
             irPrinter.visit(irProgram);
             irPrinter.printTo(System.err);
         }
@@ -156,7 +163,6 @@ public class MstarCompiler {
             System.err.println("====================================================");
             System.err.println("Intermediate Representation After Register Allocator");
             IRPrinter irPrinter = new IRPrinter();
-            irPrinter.showNasm = false;
             irPrinter.visit(irProgram);
             irPrinter.printTo(System.err);
         }
