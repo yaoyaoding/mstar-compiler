@@ -72,9 +72,6 @@ public class LocalValueNumberOptimizer implements IIRVisitor {
         immediateValueMap.clear();
         valueRegisterMap.clear();
         valueImmediateMap.clear();
-        if(bb.blockId == 47) {
-            System.err.println("I found you!");
-        }
         for(IRInstruction inst = bb.head; inst != null; inst = inst.next) {
             inst.accept(this);
         }

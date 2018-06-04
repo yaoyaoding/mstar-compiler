@@ -1,92 +1,65 @@
-//考察点：section 9 函数，包括函数定义，内建函数
-//算法：斜堆
-//样例输入：
-//5 5
-//ABCDE
-//1 2 3 4 5
-//样例输出：
-//5 E
-//10
-int N;
-int M;
-string ch;
-
-int[] l;
-int[] r;
-int[] w;
-
-int merge(int x,int y)
+int func(int a, int b, int c)
 {
-	if (0 == x) return y;
-	if (0 == y) return x;
-	if (w[x] < w[y]) {
-		int e = x;
-		x = y;
-		y = e;
-	}
-	r[x] = merge(r[x],y);
-	int e = l[x];
-	l[x] = r[x];
-	r[x] = e;
-	return x;
+	return (a + b + c) & ((1 << 30) - 1);
 }
 
 int main()
 {
-	N = getInt();
-	M = getInt();
-	ch = getString();
-	l = new int[N+M+5];
-	r = new int[N+M+5];
-	w = new int[N+M+5];
-	int i;
-	for (i=1;i <= N;i++) {
-		w[i] = getInt();
-		l[i] = 0;
-   		r[i] = 0;
-	}
-	for (i=1;i <= M;i++) {
-		w[i + N] = ch.ord(i-1);
-		l[i + N] = 0;
-		r[i + N] = 0;
-	}
-	int rt0 = 1;
-	int rt1 = N + 1;
-	for (i = 2;i <= N;i++)
-		rt0 = merge(rt0,i);
-	for (i = N+2;i<= N+M;i++)
-		rt1 = merge(rt1,i);
-	print(toString(w[rt0]));
-	print(" ");
-	print(ch.substring(rt1-N-1,rt1-N-1));
-	print("\n");
-	println(toString(merge(rt0,rt1)));
+	int n = getInt();
+	int[][] f = new int[n][n];
+	int[][] g = new int[n][n];
+	int[][] g_useless = new int[n][n];
+	int i; int j; int k;
+	for(i = 0; i < n; ++i)
+		for(j = 0; j < n; ++j)
+			f[i][j] = i + j;
+	for(i = 0; i < n; ++i)
+		for(j = 0; j < n; ++j)
+		{
+			for(k = 0; k < n; ++k)
+			{
+				if(j >= i)
+				{
+					g[i][j] = func(g[i][j], f[i][k], f[k][j]);
+					g_useless[i][j] = func(g[i][j], f[i][k], f[k][j]);
+					g_useless[i][j] = func(g[i][j], f[i][k], f[k][j]);
+					g_useless[i][j] = func(g[i][j], f[i][k], f[k][j]);
+				}
+			}
+		}
+	int sum = 0;
+	for(i = 0; i < n; ++i)
+		for(j = 0; j < n; ++j)
+			sum = (sum + g[i][j]) & ((1 << 30) - 1);
+	print(toString(sum));
 	return 0;
 }
 
 
 
+
 /*!! metadata:
 === comment ===
-function_test-huyuncong.mx
+optim1-5140309234-xietiancheng.txt
+Hint: (j >= i) is invariant, so the code should be changed to
+if (j >= i)
+{
+	for (...)
+	...
+}
+You may also want to do a inline optimization if you cannot pass it
+We also expect you to do dead code elimination.
+If the time bound is too tight or too loose, contact TA for help.
 === input ===
-5
-5
-ABCDE
-1
-2
-3
-4
-5
+700
 === assert ===
 output
 === timeout ===
-0.1
+15.0
 === output ===
-5 E
-10
+655083248
 === phase ===
-codegen pretest
+optim pretest
 === is_public ===
 True
 

@@ -209,6 +209,7 @@ public class SymbolTableBuilder implements IAstVisitor {
             s.accept(this);
         leave();
         curFunction = null;
+        functionSymbol.finish();
     }
 
     @Override
@@ -337,6 +338,7 @@ public class SymbolTableBuilder implements IAstVisitor {
                 globalSymbolTable.globalInitUsedVariables.add(symbol);
             } else {
                 curFunction.usedGlobalVariables.add(symbol);
+                curFunction.withSideEffect = true;
             }
         }
     }
@@ -384,6 +386,7 @@ public class SymbolTableBuilder implements IAstVisitor {
             e.accept(this);
         node.type = functionSymbol.returnType;
         node.functionSymbol = functionSymbol;
+        curFunction.calleeSet.add(functionSymbol);
     }
 
     @Override

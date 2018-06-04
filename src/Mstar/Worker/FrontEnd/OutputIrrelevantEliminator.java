@@ -14,6 +14,7 @@ public class OutputIrrelevantEliminator implements IAstVisitor {
     private boolean updateRelevantSet;
     private VariableSymbol functionCallIndicator;
     private VariableSymbol globalVariableIndicator;
+    private LinkedList<Boolean> inAssign;
 
 
     public OutputIrrelevantEliminator(AstProgram astProgram) {
@@ -23,9 +24,12 @@ public class OutputIrrelevantEliminator implements IAstVisitor {
         this.symbolRelevantSet = new HashSet<>();
         this.functionCallIndicator = new VariableSymbol(null, null, null,false, false);
         this.globalVariableIndicator = new VariableSymbol(null, null, null, false, false);
+        this.inAssign = new LinkedList<>();
+        this.inAssign.addLast(false);
     }
 
     public void run() {
+        if(astProgram.classes.size() > 1) return;
         System.err.println("Doing Output Irrelevant Elimination");
         for(FuncDeclaration funcDeclaration : astProgram.functions) {
             processFunction(funcDeclaration);
@@ -68,9 +72,12 @@ public class OutputIrrelevantEliminator implements IAstVisitor {
 
     private void doRemove(List<Statement> list) {
         HashSet<Statement> needToRemove = new HashSet<>();
-        for (Statement statement : list)
-            if(canRemove(statement))
+        for (Statement statement : list) {
+            if (canRemove(statement))
                 needToRemove.add(statement);
+            else
+                statement.accept(this);
+        }
         list.removeAll(needToRemove);
         for(Statement s : needToRemove) {
             AstPrinter astPrinter = new AstPrinter();
@@ -289,6 +296,9 @@ public class OutputIrrelevantEliminator implements IAstVisitor {
             initSet(node);
             if(node.symbol.isGlobalVariable) {
                 definedSymbols.get(node).add(globalVariableIndicator);
+            } else if(inAssign.getLast()) {
+                definedSymbols.get(node).add(node.symbol);
+                usedSymbols.get(node).add(node.symbol);
             } else {
                 usedSymbols.get(node).add(node.symbol);
             }
@@ -308,7 +318,9 @@ public class OutputIrrelevantEliminator implements IAstVisitor {
             initSet(node);
             node.address.accept(this);
             addDependence(node, node.address);
+            inAssign.addLast(false);
             node.index.accept(this);
+            inAssign.removeLast();
             addDependence(node, node.index);
         }
     }
@@ -317,13 +329,16 @@ public class OutputIrrelevantEliminator implements IAstVisitor {
     public void visit(FuncCallExpression node) {
         if(initSymbolStage) {
             initSet(node);
-            definedSymbols.get(node).add(functionCallIndicator);
             for(Expression expression : node.arguments) {
                 expression.accept(this);
                 addDependence(node, expression);
             }
-            symbolRelevantSet.addAll(usedSymbols.get(node));
+            if(node.functionSymbol.withSideEffect) {
+                definedSymbols.get(node).add(functionCallIndicator);
+                symbolRelevantSet.addAll(usedSymbols.get(node));
+            }
         } else if(updateRelevantSet) {
+            propgate(node, node.arguments);
             for(Expression expression : node.arguments)
                 expression.accept(this);
         }
@@ -406,9 +421,11 @@ public class OutputIrrelevantEliminator implements IAstVisitor {
     public void visit(AssignExpression node) {
         if(initSymbolStage) {
             initSet(node);
+            inAssign.addLast(true);
             node.lhs.accept(this);
+            inAssign.removeLast();
             addDependence(node, node.lhs);
-            definedSymbols.get(node).addAll(usedSymbols.get(node.lhs));
+            definedSymbols.get(node).addAll(definedSymbols.get(node.lhs));
             node.rhs.accept(this);
             addDependence(node, node.rhs);
         } else if(updateRelevantSet) {

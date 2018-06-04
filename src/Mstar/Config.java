@@ -19,6 +19,6 @@ public class Config {
     public static boolean printIRAfterLocalValueNumberOptimization = true;
     public static boolean printIRAfterUselessInstructionElimination = true;
     public static boolean printIRAfterAllocator = true;
-    public static boolean printIRWithFrame = false;
+    public static boolean printIRWithFrame = true;
     public static boolean printToAsmFile = true;
 }
