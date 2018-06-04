@@ -1009,7 +1009,11 @@ public class IRBuilder implements IAstVisitor {
     public void visit(AssignExpression node) {
         node.lhs.accept(this);
         Operand lvalue = exprResultMap.get(node.lhs);
-        assert lvalue instanceof Address;
+        try {
+            assert lvalue instanceof Address;
+        } catch (Error e) {
+            e.getStackTrace();
+        }
         assign(node.rhs, (Address)lvalue);
     }
 

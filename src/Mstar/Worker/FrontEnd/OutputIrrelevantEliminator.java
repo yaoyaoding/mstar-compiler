@@ -1,6 +1,7 @@
 package Mstar.Worker.FrontEnd;
 
 import Mstar.AST.*;
+import Mstar.Symbol.ArrayType;
 import Mstar.Symbol.VariableSymbol;
 
 import java.util.*;
@@ -187,7 +188,14 @@ public class OutputIrrelevantEliminator implements IAstVisitor {
             propgate(node, node.initStatement, node.condition, node.updateStatement);
             node.body.accept(this);
         } else {
-            node.body.accept(this);
+            if(canRemove(node.body)) {
+                AstPrinter astPrinter = new AstPrinter();
+                node.body.accept(astPrinter);
+                astPrinter.printTo(System.err);
+                node.body = new EmptyStatement();
+            } else {
+                node.body.accept(this);
+            }
         }
     }
 
@@ -444,6 +452,8 @@ public class OutputIrrelevantEliminator implements IAstVisitor {
             definedSymbols.get(node).addAll(definedSymbols.get(node.lhs));
             node.rhs.accept(this);
             addDependence(node, node.rhs);
+            if(node.rhs.type instanceof ArrayType)
+                definedSymbols.get(node).addAll(usedSymbols.get(node.rhs));
         } else if(updateRelevantSet) {
             propgate(node, node.lhs, node.rhs);
             node.lhs.accept(this);
