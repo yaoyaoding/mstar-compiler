@@ -908,66 +908,292 @@ L_033:
 
 ;=====================================================================
 	 section .text
-_qpow:
+_p:
 	b0:
 	push rbp
 	mov rbp, rsp
-	mov rax, rdi
-	mov rcx, rdx
-	mov rdi, 1
-	mov r8, rax
+	push rbx
+	push rdi
+	mov rbx, rdi
+	mov rsi, rbx
+	mov rdi, _p
+	call __hasValue
+	pop rdi
+	cmp rax, 0
+	jne b1
+	b2:
+	mov rsi, rdi
+	mov rcx, rsi
+	sub rcx, 1
+	mov rax, rsi
+	cdq
+	idiv rcx
+	mov rax, rdx
+	mov rcx, rsi
+	sub rcx, 2
+	cdq
+	idiv rcx
+	mov rax, rdx
+	mov rcx, rsi
+	sub rcx, 3
+	cdq
+	idiv rcx
+	mov rax, rdx
+	mov rcx, rsi
+	sub rcx, 4
+	cdq
+	idiv rcx
+	mov rax, rdx
+	mov rcx, rsi
+	sub rcx, 5
+	cdq
+	idiv rcx
+	mov rax, rdx
+	mov rcx, rsi
+	sub rcx, 6
+	cdq
+	idiv rcx
+	mov rax, rdx
+	mov rcx, rsi
+	sub rcx, 7
+	cdq
+	idiv rcx
+	mov rax, rdx
+	mov rcx, rsi
+	sub rcx, 8
+	cdq
+	idiv rcx
+	mov rax, rdx
+	mov rcx, rsi
+	sub rcx, 9
+	cdq
+	idiv rcx
+	mov rax, rdx
+	mov rcx, rsi
+	sub rcx, 10
+	cdq
+	idiv rcx
+	mov rax, rdx
+	mov rcx, rsi
+	sub rcx, 11
+	cdq
+	idiv rcx
+	mov rax, rdx
+	mov rcx, rsi
+	sub rcx, 12
+	cdq
+	idiv rcx
+	mov rax, rdx
+	mov rcx, rsi
+	sub rcx, 13
+	cdq
+	idiv rcx
+	mov rax, rdx
+	mov rcx, rsi
+	sub rcx, 14
+	cdq
+	idiv rcx
+	mov rax, rdx
+	mov rcx, rsi
+	sub rcx, 15
+	cdq
+	idiv rcx
+	mov rax, rdx
+	mov rcx, rsi
+	sub rcx, 16
+	cdq
+	idiv rcx
+	mov rax, rdx
+	mov rcx, rsi
+	sub rcx, 17
+	cdq
+	idiv rcx
+	mov rax, rdx
+	mov rcx, rsi
+	sub rcx, 18
+	cdq
+	idiv rcx
+	mov rax, rdx
+	mov rcx, rsi
+	sub rcx, 19
+	cdq
+	idiv rcx
+	mov rax, rdx
+	mov rcx, rsi
+	sub rcx, 20
+	cdq
+	idiv rcx
+	mov rax, rdx
+	jmp b3
 	b1:
-	cmp rsi, 0
-	jg b2
+	mov rsi, rbx
+	mov rdi, _p
+	call __getValue
 	b3:
-	mov rax, rdi
-	b4:
+	mov rdx, rax
+	mov rsi, rbx
+	mov rdi, _p
+	call __setValue
+	pop rbx
 	leave
 	ret 
-	b2:
-	mov rax, rsi
-	and rax, 1
-	cmp rax, 1
-	je b5
-	jmp b6
-	b5:
-	mov rax, rdi
-	imul r8
-	cdq
-	idiv rcx
-	mov rax, rdx
-	mov rdi, rax
-	b6:
-	mov rax, r8
-	imul r8
-	cdq
-	idiv rcx
-	mov rax, rdx
-	mov r8, rax
-	mov rax, rsi
-	cdq
-	mov rsi, 2
-	idiv rsi
-	mov rsi, rax
-	jmp b1
 _main:
-	b7:
+	b4:
 	push rbp
 	mov rbp, rsp
-	mov rdx, 10000
-	mov rsi, 10
-	mov rdi, 2
-	call _qpow
-	mov rdi, rax
+	push rbx
+	mov rbx, 1
+	b5:
+	cmp rbx, 30000000
+	jle b6
+	b7:
+	mov rax, 0
+	b8:
+	pop rbx
+	leave
+	ret 
+	b6:
+	mov rax, 100
+	mov rax, 100
+	mov rax, 99
+	mov rax, 100
+	cdq
+	mov rdx, 1
+	mov rax, 1
+	mov rax, 100
+	mov rax, 98
+	mov rax, 1
+	cdq
+	mov rdx, 1
+	mov rax, 1
+	mov rax, 100
+	mov rax, 97
+	mov rax, 1
+	cdq
+	mov rdx, 1
+	mov rax, 1
+	mov rax, 100
+	mov rax, 96
+	mov rax, 1
+	cdq
+	mov rdx, 1
+	mov rax, 1
+	mov rax, 100
+	mov rax, 95
+	mov rax, 1
+	cdq
+	mov rdx, 1
+	mov rax, 1
+	mov rax, 100
+	mov rax, 94
+	mov rax, 1
+	cdq
+	mov rdx, 1
+	mov rax, 1
+	mov rax, 100
+	mov rax, 93
+	mov rax, 1
+	cdq
+	mov rdx, 1
+	mov rax, 1
+	mov rax, 100
+	mov rax, 92
+	mov rax, 1
+	cdq
+	mov rdx, 1
+	mov rax, 1
+	mov rax, 100
+	mov rax, 91
+	mov rax, 1
+	cdq
+	mov rdx, 1
+	mov rax, 1
+	mov rax, 100
+	mov rax, 90
+	mov rax, 1
+	cdq
+	mov rdx, 1
+	mov rax, 1
+	mov rax, 100
+	mov rax, 89
+	mov rax, 1
+	cdq
+	mov rdx, 1
+	mov rax, 1
+	mov rax, 100
+	mov rax, 88
+	mov rax, 1
+	cdq
+	mov rdx, 1
+	mov rax, 1
+	mov rax, 100
+	mov rax, 87
+	mov rax, 1
+	cdq
+	mov rdx, 1
+	mov rax, 1
+	mov rax, 100
+	mov rax, 86
+	mov rax, 1
+	cdq
+	mov rdx, 1
+	mov rax, 1
+	mov rax, 100
+	mov rax, 85
+	mov rax, 1
+	cdq
+	mov rdx, 1
+	mov rax, 1
+	mov rax, 100
+	mov rax, 84
+	mov rax, 1
+	cdq
+	mov rdx, 1
+	mov rax, 1
+	mov rax, 100
+	mov rax, 83
+	mov rax, 1
+	cdq
+	mov rdx, 1
+	mov rax, 1
+	mov rax, 100
+	mov rax, 82
+	mov rax, 1
+	cdq
+	mov rdx, 1
+	mov rax, 1
+	mov rax, 100
+	mov rax, 81
+	mov rax, 1
+	cdq
+	mov rdx, 1
+	mov rax, 1
+	mov rax, 100
+	mov rax, 80
+	mov rax, 1
+	cdq
+	mov rdx, 1
+	mov rax, 1
+	mov rcx, 1
+	mov rax, rbx
+	cdq
+	mov rsi, 3000000
+	idiv rsi
+	mov rax, rdx
+	cmp rax, 0
+	je b9
+	jmp b10
+	b9:
+	mov rdi, rcx
 	call __toString
 	mov rdi, rax
 	call __println
-	mov rax, 0
-	b8:
-	leave
-	ret 
+	b10:
+	b11:
+	inc rbx
+	jmp b5
 __init:
-	b9:
+	b12:
 	push rbp
 	mov rbp, rsp
 	call _main

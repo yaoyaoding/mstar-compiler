@@ -95,13 +95,39 @@ public class MstarCompiler {
         astProgram.accept(irBuilder);
         IRProgram irProgram = irBuilder.irProgram;
 
+        if(Config.printIR) {
+            System.err.println("=============================================");
+            System.err.println("Intermediate Representation After IR Building");
+            IRPrinter irPrinter = new IRPrinter();
+            irPrinter.showBlockHint = false;
+            irPrinter.showNasm = false;
+            irPrinter.visit(irProgram);
+            irPrinter.printTo(System.err);
+        }
+
+        if(Config.useLocalValueNumberOptimization) {
+            LocalValueNumberOptimizer localValueNumberOptimizer = new LocalValueNumberOptimizer(irProgram);
+            localValueNumberOptimizer.run();
+            if(Config.printIRAfterLocalValueNumberOptmization) {
+                System.err.println("====================================================================");
+                System.err.println("Intermediate Representation After Local Value Numbering Optimization");
+                IRPrinter irPrinter = new IRPrinter();
+                irPrinter.showBlockHint = false;
+                irPrinter.showNasm = false;
+                irPrinter.visit(irProgram);
+                irPrinter.printTo(System.err);
+            }
+        }
+
+
+
         //  correct some invalid use of instruction
         IRCorrector irCorrector = new IRCorrector();
         irProgram.accept(irCorrector);
 
-        if(Config.printIRBeforeAllocator) {
-            System.err.println("=====================================================");
-            System.err.println("Intermediate Representation Before Register Allocator");
+        if(Config.printIR) {
+            System.err.println("==============================================");
+            System.err.println("Intermediate Representation After IR Corrector");
             IRPrinter irPrinter = new IRPrinter();
             irPrinter.showBlockHint = false;
             irPrinter.showNasm = false;

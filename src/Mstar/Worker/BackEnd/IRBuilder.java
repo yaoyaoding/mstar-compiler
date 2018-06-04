@@ -8,7 +8,6 @@ import Mstar.IR.IRProgram;
 import Mstar.IR.Instruction.*;
 import Mstar.IR.Operand.*;
 import Mstar.IR.RegisterSet;
-import Mstar.IR.RegisterSet.*;
 import Mstar.Symbol.*;
 
 import java.util.*;

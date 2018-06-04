@@ -56,6 +56,27 @@ public abstract class IRInstruction {
             next.prev = prev;
         }
     }
+    public void replace(IRInstruction newInst) {
+        if(prev == null && next == null) {
+            bb.head = bb.tail = newInst;
+            newInst.prev = newInst.next = null;
+        } else if(prev == null) {
+            bb.head = newInst;
+            newInst.prev = null;
+            this.next.prev = newInst;
+            newInst.next = this.next;
+        } else if(next == null) {
+            newInst.prev = this.prev;
+            this.prev.next = newInst;
+            bb.tail = newInst;
+            newInst.next = null;
+        } else {
+            newInst.prev = this.prev;
+            this.prev.next = newInst;
+            newInst.next = this.next;
+            this.next.prev = newInst;
+        }
+    }
     public abstract void renameUseReg(HashMap<Register, Register> renameMap);
     public abstract void renameDefReg(HashMap<Register, Register> renameMap);
     public abstract LinkedList<Register> getDefRegs();
