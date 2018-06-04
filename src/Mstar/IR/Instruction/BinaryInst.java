@@ -23,9 +23,6 @@ public class BinaryInst extends IRInstruction {
         this.op = op;
         this.dest = dest;
         this.src = src;
-        if(src == null) {
-            System.err.println("DARRELL");
-        }
     }
 
     @Override

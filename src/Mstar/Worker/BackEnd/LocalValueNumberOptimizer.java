@@ -73,6 +73,9 @@ public class LocalValueNumberOptimizer implements IIRVisitor {
         immediateValueMap.clear();
         valueRegisterMap.clear();
         valueImmediateMap.clear();
+        if(bb.blockId == 47) {
+            System.err.println("I found you!");
+        }
         for(IRInstruction inst = bb.head; inst != null; inst = inst.next) {
             inst.accept(this);
         }
@@ -142,8 +145,8 @@ public class LocalValueNumberOptimizer implements IIRVisitor {
             case MUL: return limm * rimm;
             case MOD: if(rimm == 0) rimm = 1; return limm % rimm;
             case DIV: if(rimm == 0) rimm = 1; return limm / rimm;
-            case AND: return limm + rimm;
-            case ADD: return limm & rimm;
+            case AND: return limm & rimm;
+            case ADD: return limm + rimm;
             case OR: return limm | rimm;
             case SAL: return limm << rimm;
             case SAR: return limm >> rimm;
@@ -162,6 +165,10 @@ public class LocalValueNumberOptimizer implements IIRVisitor {
                 resultValue = pairValueMap.get(pair);
                 Operand operand = getValueOperand(resultValue);
                 if(operand != null) {
+                    if(inst.op == DIV || inst.op == MOD) {
+                        assert inst.prev instanceof Cdq;
+                        inst.prev.remove();
+                    }
                     inst.replace(new Move(inst.bb, inst.op == MOD ? vrdx : vrax, operand));
                 }
             } else {
@@ -170,6 +177,10 @@ public class LocalValueNumberOptimizer implements IIRVisitor {
                 if(valueImmediateMap.containsKey(pair.lvalue) && valueImmediateMap.containsKey(pair.rvalue)) {
                     Integer resultImm = doBinary(inst.op, valueImmediateMap.get(lvalue), valueImmediateMap.get(rvalue));
                     valueImmediateMap.put(resultValue, resultImm);
+                    if(inst.op == DIV || inst.op == MOD) {
+                        assert inst.prev instanceof Cdq;
+                        inst.prev.remove();
+                    }
                     inst.replace(new Move(inst.bb, inst.op == MOD ? vrdx : vrax, new Immediate(resultImm)));
                 }
             }
@@ -218,7 +229,7 @@ public class LocalValueNumberOptimizer implements IIRVisitor {
     public void visit(UnaryInst inst) {
         Integer value = getOperandValue(inst.dest);
         Integer resultValue;
-        if(immediateValueMap.containsKey(value)) {
+        if(valueImmediateMap.containsKey(value)) {
             Integer imm = immediateValueMap.get(value);
             Integer resultImm = doUnary(inst.op, imm);
             resultValue = immediateValueMap.containsKey(resultImm) ? immediateValueMap.get(resultImm) : curValueNumber++;

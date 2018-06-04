@@ -112,7 +112,7 @@ public class MstarCompiler {
                 System.err.println("====================================================================");
                 System.err.println("Intermediate Representation After Local Value Numbering Optimization");
                 IRPrinter irPrinter = new IRPrinter();
-                irPrinter.showBlockHint = false;
+                irPrinter.showBlockHint = true;
                 irPrinter.showNasm = false;
                 irPrinter.visit(irProgram);
                 irPrinter.printTo(System.err);

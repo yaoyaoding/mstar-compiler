@@ -16,16 +16,16 @@ public class BasicBlock {
     public LinkedList<BasicBlock> frontiers = null;
     public LinkedList<BasicBlock> successors = null;
 
+    private static int globalBlockId = 0;
+    public int blockId;
+
     public BasicBlock(Function function, String hint) {
         this.function = function;
         this.hint = hint;
         this.frontiers = new LinkedList<>();
         this.successors = new LinkedList<>();
-        try {
-            function.basicblocks.add(this);
-        } catch (Exception e) {
-            throw e;
-        }
+        function.basicblocks.add(this);
+        blockId = globalBlockId++;
     }
 
     public boolean isEnded() {
