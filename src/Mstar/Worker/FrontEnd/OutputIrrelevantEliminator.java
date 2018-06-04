@@ -14,6 +14,7 @@ public class OutputIrrelevantEliminator implements IAstVisitor {
     private boolean updateRelevantSet;
     private VariableSymbol functionCallIndicator;
     private VariableSymbol globalVariableIndicator;
+    private VariableSymbol importantIndicator;
     private LinkedList<Boolean> inAssign;
 
 
@@ -24,6 +25,7 @@ public class OutputIrrelevantEliminator implements IAstVisitor {
         this.symbolRelevantSet = new HashSet<>();
         this.functionCallIndicator = new VariableSymbol(null, null, null,false, false);
         this.globalVariableIndicator = new VariableSymbol(null, null, null, false, false);
+        this.importantIndicator = new VariableSymbol(null, null, null, false, false);
         this.inAssign = new LinkedList<>();
         this.inAssign.addLast(false);
     }
@@ -31,31 +33,16 @@ public class OutputIrrelevantEliminator implements IAstVisitor {
     public void run() {
         if(astProgram.classes.size() > 1) return;
         System.err.println("Doing Output Irrelevant Elimination");
+        astProgram.accept(this);
+        /*
         for(FuncDeclaration funcDeclaration : astProgram.functions) {
             processFunction(funcDeclaration);
         }
+        */
         System.err.println("Output Irrelevant Elimination Finished");
     }
 
     private void processFunction(FuncDeclaration funcDeclaration) {
-        usedSymbols.clear();
-        definedSymbols.clear();
-        symbolRelevantSet.clear();
-        symbolRelevantSet.add(functionCallIndicator);
-        symbolRelevantSet.add(globalVariableIndicator);
-
-        initSymbolStage = true;
-        funcDeclaration.accept(this);
-        initSymbolStage = false;
-        updateRelevantSet = true;
-        int lastSize = -1;
-        while(lastSize != symbolRelevantSet.size()) {
-            lastSize = symbolRelevantSet.size();
-            funcDeclaration.accept(this);
-        }
-        updateRelevantSet = false;
-
-        funcDeclaration.accept(this);
     }
 
     private boolean canRemove(AstNode node) {
@@ -65,7 +52,30 @@ public class OutputIrrelevantEliminator implements IAstVisitor {
     }
 
     @Override
-    public void visit(AstProgram node) { }
+    public void visit(AstProgram node) {
+        usedSymbols.clear();
+        definedSymbols.clear();
+        symbolRelevantSet.clear();
+        symbolRelevantSet.add(functionCallIndicator);
+        symbolRelevantSet.add(globalVariableIndicator);
+        symbolRelevantSet.add(importantIndicator);
+
+        initSymbolStage = true;
+        for(FuncDeclaration fd : node.functions)
+            fd.accept(this);
+        initSymbolStage = false;
+        updateRelevantSet = true;
+        int lastSize = -1;
+        while(lastSize != symbolRelevantSet.size()) {
+            lastSize = symbolRelevantSet.size();
+            for(FuncDeclaration fd : node.functions)
+                fd.accept(this);
+        }
+        updateRelevantSet = false;
+
+        for(FuncDeclaration fd : node.functions)
+            fd.accept(this);
+    }
 
     @Override
     public void visit(Declaration node) { }
@@ -223,12 +233,18 @@ public class OutputIrrelevantEliminator implements IAstVisitor {
 
     @Override
     public void visit(ContinueStatement node) {
-        if(initSymbolStage) initSet(node);
+        if(initSymbolStage) {
+            initSet(node);
+            definedSymbols.get(node).add(importantIndicator);
+        }
     }
 
     @Override
     public void visit(BreakStatement node) {
-        if(initSymbolStage) initSet(node);
+        if(initSymbolStage) {
+            initSet(node);
+            definedSymbols.get(node).add(importantIndicator);
+        }
     }
 
     @Override
@@ -333,7 +349,7 @@ public class OutputIrrelevantEliminator implements IAstVisitor {
                 expression.accept(this);
                 addDependence(node, expression);
             }
-            if(node.functionSymbol.withSideEffect) {
+            if (node.functionSymbol != null && node.functionSymbol.withSideEffect) {
                 definedSymbols.get(node).add(functionCallIndicator);
                 symbolRelevantSet.addAll(usedSymbols.get(node));
             }

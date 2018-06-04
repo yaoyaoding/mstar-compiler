@@ -386,7 +386,8 @@ public class SymbolTableBuilder implements IAstVisitor {
             e.accept(this);
         node.type = functionSymbol.returnType;
         node.functionSymbol = functionSymbol;
-        curFunction.calleeSet.add(functionSymbol);
+        if(curFunction != null)
+            curFunction.calleeSet.add(functionSymbol);
     }
 
     @Override
