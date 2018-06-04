@@ -120,6 +120,11 @@ public class LivenessAnalyzer {
         return virtualRegisters;
     }
 
+
+    public HashMap<BasicBlock,HashSet<VirtualRegister>> getLiveOut(Function function) {
+        return null;
+    }
+
     public void getInferenceGraph(Function function,
                                   Graph inferenceGraph,
                                   Graph moveGraph
@@ -127,6 +132,7 @@ public class LivenessAnalyzer {
         inferenceGraph.clear();
         if(moveGraph != null)
             moveGraph.clear();
+
         init(function);
 
         for(BasicBlock bb : function.basicblocks) {

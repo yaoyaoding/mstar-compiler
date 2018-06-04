@@ -230,7 +230,7 @@ public class LocalValueNumberOptimizer implements IIRVisitor {
         Integer value = getOperandValue(inst.dest);
         Integer resultValue;
         if(valueImmediateMap.containsKey(value)) {
-            Integer imm = immediateValueMap.get(value);
+            Integer imm = valueImmediateMap.get(value);
             Integer resultImm = doUnary(inst.op, imm);
             resultValue = immediateValueMap.containsKey(resultImm) ? immediateValueMap.get(resultImm) : curValueNumber++;
             inst.replace(new Move(inst.bb, inst.dest, new Immediate(resultImm)));
