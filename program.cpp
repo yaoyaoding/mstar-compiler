@@ -1,47 +1,58 @@
+//Target: use loops to calculate calculator of 6!
+//@author yixi
+int N;
+int h = 99;
+int i = 100;
+int j = 101;
+int k = 102;
+int total = 0;
+
 int main() {
-    int la = 5;
-    int lb = 10;
-    int[] a;
-    int[] b = new int[lb];
-    int[][] c = new int [2][];
-    a = new int[la];
-    c[0] = a;
-    c[1] = b;
+  	int a;
+    int b;
+	int c;
+	int d;
+	int e;
+	int f;
+	total = getInt();
+	for ( a=1; a<=N; a++ )
+	for ( b=1; b<=N; b++ )
+	for ( c=1; c<=N; c++ )
+	for ( d=1; d<=N; d++ )
+	for ( e=1; e<=N; e++ )
+	for ( f=1; f<=N; f++ )
+		if (a!=b && a!=c && a!=d && a!=e && a!=f && a!=h && a!=i && a!=j && a!=k
+              && b!=c && b!=d && b!=e && b!=f && b!=h && b!=i && b!=j && b!=k
+              && c!=d && c!=e && c!=f && c!=h && c!=i && c!=j && c!=k
+              && d!=e && d!=f && d!=h && d!=i && d!=j && d!=k
+              && e!=f && e!=h && e!=i && e!=j && e!=k
+              && f!=h && f!=i && f!=j && f!=k && i!=j && h!=k)
+		{
+			total++;
+		}
 
-    int cnt = 0;
-    int i;
-    int j;
-    for (i = 0; i < 2; ++i)
-        for (j = 0; j < la; ++j)
-            c[i][j] = ++cnt;
-    for (j = la; j < lb; ++j)
-        c[1][j] = ++cnt;
-
-    int sum = 0;
-    for (i = 0; i < la; ++i) sum = sum + a[i];
-    for (i = 0; i < lb; ++i) sum = sum + b[i];
-
-    return sum;
+	return total;
 }
-
 
 
 
 /*!! metadata:
 === comment ===
-array4.mx
-=== assert ===
-exitcode
-=== timeout ===
-0.1
-=== input ===
-
-=== phase ===
-codegen pretest
+superloop-5090379042-jiaxiao.mx
 === is_public ===
 True
+=== assert ===
+output
+=== timeout ===
+3.0
+=== input ===
+17
+=== phase ===
+optim extended
+=== output ===
+8910720
 === exitcode ===
-120
+
 
 !!*/
 

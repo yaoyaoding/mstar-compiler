@@ -57,6 +57,19 @@ public class CJump extends IRInstruction {
         }
     }
 
+    public CompareOp getNegativeCompareOp() {
+        switch (op) {
+            case NE: return E;
+            case LE: return G;
+            case GE: return L;
+            case L: return GE;
+            case G: return LE;
+            case E: return NE;
+            default: assert false; return E;
+        }
+
+    }
+
     @Override
     public LinkedList<Register> getUseRegs() {
         LinkedList<Register> regs = new LinkedList<>();

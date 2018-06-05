@@ -30,6 +30,7 @@ public class IRBuilder implements IAstVisitor {
     private HashMap<Expression,BasicBlock> trueBBMap, falseBBMap;
     private HashMap<Expression,Operand> exprResultMap;
     private HashMap<Expression,Address> assignToMap;
+    private HashSet<Expression> conditionReverseSet;
     private boolean isInParameter;
     private boolean isInClassDeclaration;
     private boolean isInInline;
@@ -64,6 +65,7 @@ public class IRBuilder implements IAstVisitor {
         this.falseBBMap = new HashMap<>();
         this.exprResultMap = new HashMap<>();
         this.assignToMap = new HashMap<>();
+        this.conditionReverseSet = new HashSet<>();
         this.isInParameter = false;
         this.isInClassDeclaration = false;
         this.inlineVariableRegisterStack = new LinkedList<>();

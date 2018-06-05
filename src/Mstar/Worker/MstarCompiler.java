@@ -110,7 +110,6 @@ public class MstarCompiler {
                 System.err.println("====================================================================");
                 System.err.println("Intermediate Representation After Local Value Numbering Optimization");
                 IRPrinter irPrinter = new IRPrinter();
-                irPrinter.showId = true;
                 irPrinter.visit(irProgram);
                 irPrinter.printTo(System.err);
             }
@@ -124,7 +123,6 @@ public class MstarCompiler {
                 System.err.println("===============================================================");
                 System.err.println("Intermediate Representation After Eliminate Useless Instruction");
                 IRPrinter irPrinter = new IRPrinter();
-                irPrinter.showId = true;
                 irPrinter.visit(irProgram);
                 irPrinter.printTo(System.err);
             }

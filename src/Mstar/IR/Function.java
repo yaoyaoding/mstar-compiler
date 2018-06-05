@@ -6,6 +6,7 @@ import Mstar.IR.Operand.Register;
 import Mstar.IR.Operand.VirtualRegister;
 import Mstar.Symbol.VariableSymbol;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 
@@ -71,8 +72,9 @@ public class Function {
     private void dfsReversePostOrderOnReversedCFG(BasicBlock node) {
         if(visitedBasicBlocks.contains(node)) return;
         visitedBasicBlocks.add(node);
-        for(BasicBlock bb : node.frontiers)
+        for(BasicBlock bb : node.frontiers) {
             dfsReversePostOrderOnReversedCFG(bb);
+        }
         reversePostOrderOnReverseCFG.addFirst(node);
     }
 
@@ -102,6 +104,19 @@ public class Function {
             }
         }
 
+        /* trans the CJump instruction */
+        for(BasicBlock bb : basicblocks) {
+            if(bb.tail instanceof CJump) {
+                CJump cJump = (CJump)bb.tail;
+                if(cJump.thenBB.frontiers.size() < cJump.elseBB.frontiers.size()) {
+                    cJump.op = cJump.getNegativeCompareOp();
+                    BasicBlock temp = cJump.thenBB;
+                    cJump.thenBB = cJump.elseBB;
+                    cJump.elseBB = temp;
+                }
+            }
+        }
+
         /* calculate reversed post order on CFG */
         visitedBasicBlocks.clear();
         reversePostOrder.clear();
@@ -121,11 +136,7 @@ public class Function {
     private LinkedList<PhysicalRegister> trans(LinkedList<Register> regs) {
         LinkedList<PhysicalRegister> ret = new LinkedList<>();
         for(Register r : regs) {
-            try {
-                ret.add((PhysicalRegister) r);
-            } catch (Exception e) {
-                throw e;
-            }
+            ret.add((PhysicalRegister) r);
         }
         return ret;
     }

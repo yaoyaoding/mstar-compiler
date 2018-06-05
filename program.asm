@@ -912,130 +912,245 @@ _main:
 	b0:
 	push rbp
 	mov rbp, rsp
-	sub rsp, 16
-	push r14
-	push r12
 	push rbx
+	push r12
 	push r13
 	push r15
-	mov rbx, 5
-	mov rcx, 10
-	mov qword [rbp - 8], rcx
-	mov r13, 10
-	lea rax, [r13 * 8 + 8]
-	mov rdi, rax
-	call malloc
-	mov qword [rax], 10
+	push r14
+	mov rcx, qword [g_0]
+	mov r14, qword [g_1]
+	mov r13, qword [g_2]
+	mov r15, qword [g_3]
+	mov rbx, qword [g_4]
+	mov r12, qword [g_5]
+	call __getInt
+	mov rcx, rax
+	mov rdi, 1
 	b1:
-	cmp r13, 0
-	jg b2
+	cmp rdi, r15
+	jle b2
 	b3:
-	mov r13, rax
-	mov r14, 2
-	lea r12, [r14 * 8 + 8]
-	mov rdi, r12
-	call malloc
-	mov qword [rax], 2
-	b4:
-	cmp r14, 0
-	jg b5
-	b6:
-	mov r14, rax
-	mov r12, rbx
-	lea r15, [r12 * 8 + 8]
-	mov rdi, r15
-	call malloc
-	mov qword [rax], r12
-	b7:
-	cmp r12, 0
-	jg b8
-	b9:
-	mov rdi, rax
-	mov qword [r14 + 8], rdi
-	mov qword [r14 + 16], r13
-	mov rcx, 0
-	mov rax, 0
-	b10:
-	cmp rax, 2
-	jl b11
-	b12:
-	mov rsi, rbx
-	b13:
-	mov rax, qword [rbp - 8]
-	cmp rsi, rax
-	jl b14
-	b15:
-	mov rcx, 0
-	mov rax, 0
-	b16:
-	cmp rax, rbx
-	jl b17
-	b18:
-	mov rax, 0
-	b19:
-	mov rdx, qword [rbp - 8]
-	cmp rax, rdx
-	jl b20
-	b21:
 	mov rax, rcx
-	b22:
+	b4:
+	mov qword [g_0], rcx
+	mov qword [g_1], r14
+	mov qword [g_2], r13
+	mov qword [g_3], r15
+	mov qword [g_4], rbx
+	mov qword [g_5], r12
+	pop r14
 	pop r15
 	pop r13
-	pop rbx
 	pop r12
-	pop r14
+	pop rbx
 	leave
 	ret 
-	b20:
-	add rcx, qword [r13 + rax * 8 + 8]
-	b23:
-	inc rax
-	jmp b19
-	b17:
-	add rcx, qword [rdi + rax * 8 + 8]
-	b24:
-	inc rax
-	jmp b16
+	b2:
+	mov r9, 1
+	b5:
+	cmp r9, r15
+	jle b6
+	b7:
+	b8:
+	inc rdi
+	jmp b1
+	b6:
+	mov rdx, 1
+	b9:
+	cmp rdx, r15
+	jle b10
+	b11:
+	b12:
+	inc r9
+	jmp b5
+	b10:
+	mov rsi, 1
+	b13:
+	cmp rsi, r15
+	jle b14
+	b15:
+	b16:
+	inc rdx
+	jmp b9
 	b14:
-	mov rax, qword [r14 + 16]
-	inc rcx
-	mov qword [rax + rsi * 8 + 8], rcx
-	b25:
+	mov r8, 1
+	b17:
+	cmp r8, r15
+	jle b18
+	b19:
+	b20:
 	inc rsi
 	jmp b13
-	b11:
-	mov rsi, 0
+	b18:
+	mov rax, 1
+	b21:
+	cmp rax, r15
+	jle b22
+	b23:
+	b24:
+	inc r8
+	jmp b17
+	b22:
+	cmp rdi, r9
+	je b25
 	b26:
-	cmp rsi, rbx
-	jl b27
-	b28:
-	b29:
-	inc rax
-	jmp b10
+	cmp rdi, rdx
+	je b25
 	b27:
-	mov rdx, qword [r14 + rax * 8 + 8]
-	inc rcx
-	mov qword [rdx + rsi * 8 + 8], rcx
+	cmp rdi, rsi
+	je b25
+	b28:
+	cmp rdi, r8
+	je b25
+	b29:
+	cmp rdi, rax
+	je b25
 	b30:
-	inc rsi
-	jmp b26
-	b8:
-	mov qword [rax + r12 * 8], 0
-	dec r12
-	jmp b7
-	b5:
-	mov qword [rax + r14 * 8], 0
-	dec r14
-	jmp b4
-	b2:
-	mov qword [rax + r13 * 8], 0
-	dec r13
-	jmp b1
-__init:
+	cmp rdi, rbx
+	je b25
 	b31:
+	cmp rdi, r12
+	je b25
+	b32:
+	cmp rdi, r14
+	je b25
+	b33:
+	cmp rdi, r13
+	je b25
+	b34:
+	cmp r9, rdx
+	je b25
+	b35:
+	cmp r9, rsi
+	je b25
+	b36:
+	cmp r9, r8
+	je b25
+	b37:
+	cmp r9, rax
+	je b25
+	b38:
+	cmp r9, rbx
+	je b25
+	b39:
+	cmp r9, r12
+	je b25
+	b40:
+	cmp r9, r14
+	je b25
+	b41:
+	cmp r9, r13
+	je b25
+	b42:
+	cmp rdx, rsi
+	je b25
+	b43:
+	cmp rdx, r8
+	je b25
+	b44:
+	cmp rdx, rax
+	je b25
+	b45:
+	cmp rdx, rbx
+	je b25
+	b46:
+	cmp rdx, r12
+	je b25
+	b47:
+	cmp rdx, r14
+	je b25
+	b48:
+	cmp rdx, r13
+	je b25
+	b49:
+	cmp rsi, r8
+	je b25
+	b50:
+	cmp rsi, rax
+	je b25
+	b51:
+	cmp rsi, rbx
+	je b25
+	b52:
+	cmp rsi, r12
+	je b25
+	b53:
+	cmp rsi, r14
+	je b25
+	b54:
+	cmp rsi, r13
+	je b25
+	b55:
+	cmp r8, rax
+	je b25
+	b56:
+	cmp r8, rbx
+	je b25
+	b57:
+	cmp r8, r12
+	je b25
+	b58:
+	cmp r8, r14
+	je b25
+	b59:
+	cmp r8, r13
+	je b25
+	b60:
+	cmp rax, rbx
+	je b25
+	b61:
+	cmp rax, r12
+	je b25
+	b62:
+	cmp rax, r14
+	je b25
+	b63:
+	cmp rax, r13
+	je b25
+	b64:
+	cmp r12, r14
+	je b25
+	b65:
+	cmp rbx, r13
+	je b25
+	b66:
+	inc rcx
+	b25:
+	b67:
+	inc rax
+	jmp b21
+__init:
+	b68:
 	push rbp
 	mov rbp, rsp
+	mov r8, 99
+	mov rdi, 100
+	mov rcx, 101
+	mov rsi, 102
+	mov rdx, 0
+	mov qword [g_1], rcx
+	mov qword [g_0], rdx
+	mov qword [g_2], rsi
+	mov qword [g_4], r8
+	mov qword [g_5], rdi
 	call _main
+	mov rdi, qword [g_5]
+	mov r8, qword [g_4]
+	mov rsi, qword [g_2]
+	mov rdx, qword [g_0]
+	mov rcx, qword [g_1]
 	leave
 	ret 
 	section .data
+g_3:
+	db 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
+g_4:
+	db 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
+g_5:
+	db 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
+g_1:
+	db 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
+g_2:
+	db 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
+g_0:
+	db 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
