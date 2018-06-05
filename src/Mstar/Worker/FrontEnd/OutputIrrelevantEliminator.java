@@ -1,6 +1,7 @@
 package Mstar.Worker.FrontEnd;
 
 import Mstar.AST.*;
+import Mstar.Config;
 import Mstar.Symbol.ArrayType;
 import Mstar.Symbol.VariableSymbol;
 
@@ -33,14 +34,11 @@ public class OutputIrrelevantEliminator implements IAstVisitor {
 
     public void run() {
         if(astProgram.classes.size() > 1) return;
-        System.err.println("Doing Output Irrelevant Elimination");
+        if(Config.printIR)
+            System.err.println("Doing Output Irrelevant Elimination");
         astProgram.accept(this);
-        /*
-        for(FuncDeclaration funcDeclaration : astProgram.functions) {
-            processFunction(funcDeclaration);
-        }
-        */
-        System.err.println("Output Irrelevant Elimination Finished");
+        if(Config.printIR)
+            System.err.println("Output Irrelevant Elimination Finished");
     }
 
     private void processFunction(FuncDeclaration funcDeclaration) {

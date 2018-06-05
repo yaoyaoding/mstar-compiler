@@ -81,4 +81,3 @@ StackAllocator: IR(with VR, MEM, IMM) -> IR(with VR, MEM, IMM) with VR's StackSl
 
 RegisterAllocator: IR(with VR, MEM, IMM) -> IR(with )
 
-X86Transformer: 
