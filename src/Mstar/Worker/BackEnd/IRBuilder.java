@@ -30,7 +30,6 @@ public class IRBuilder implements IAstVisitor {
     private HashMap<Expression,BasicBlock> trueBBMap, falseBBMap;
     private HashMap<Expression,Operand> exprResultMap;
     private HashMap<Expression,Address> assignToMap;
-    private HashSet<Expression> conditionReverseSet;
     private boolean isInParameter;
     private boolean isInClassDeclaration;
     private boolean isInInline;
@@ -67,7 +66,6 @@ public class IRBuilder implements IAstVisitor {
         this.falseBBMap = new HashMap<>();
         this.exprResultMap = new HashMap<>();
         this.assignToMap = new HashMap<>();
-        this.conditionReverseSet = new HashSet<>();
         this.isInParameter = false;
         this.isInClassDeclaration = false;
         this.inlineVariableRegisterStack = new LinkedList<>();
@@ -563,11 +561,11 @@ public class IRBuilder implements IAstVisitor {
     @Override
     public void visit(ArrayExpression node) {
         node.address.accept(this);
+        Operand baseAddr = exprResultMap.get(node.address);
         node.index.accept(this);
+        Operand index = exprResultMap.get(node.index);
 
         VirtualRegister base;
-        Operand baseAddr = exprResultMap.get(node.address);
-        Operand index = exprResultMap.get(node.index);
         if(baseAddr instanceof Register) {
             base = (VirtualRegister) baseAddr;
         } else {
@@ -891,7 +889,6 @@ public class IRBuilder implements IAstVisitor {
             return;
         }
         node.expression.accept(this);
-
         Operand operand = exprResultMap.get(node.expression);
         switch(node.op) {
             case "v++": case "v--": {
@@ -926,8 +923,8 @@ public class IRBuilder implements IAstVisitor {
     private Operand doStringConcate(Expression lhs, Expression rhs) {
         Address result = new VirtualRegister("");
         lhs.accept(this);
-        rhs.accept(this);
         Operand olhs = exprResultMap.get(lhs);
+        rhs.accept(this);
         Operand orhs = exprResultMap.get(rhs);
         VirtualRegister vr;
         if(olhs instanceof Memory && !(olhs instanceof StackSlot)) {
@@ -962,8 +959,8 @@ public class IRBuilder implements IAstVisitor {
             case "^": bop = BinaryInst.BinaryOp.XOR; isRevertable = true; break;
         }
         lhs.accept(this);
-        rhs.accept(this);
         Operand olhs = exprResultMap.get(lhs);
+        rhs.accept(this);
         Operand orhs = exprResultMap.get(rhs);
         Address result = new VirtualRegister("");
 
@@ -1024,8 +1021,8 @@ public class IRBuilder implements IAstVisitor {
     }
     private void doRelationBinary(String op, Expression lhs, Expression rhs, BasicBlock trueBB, BasicBlock falseBB) {
         lhs.accept(this);
-        rhs.accept(this);
         Operand olhs = exprResultMap.get(lhs);
+        rhs.accept(this);
         Operand orhs = exprResultMap.get(rhs);
 
         CJump.CompareOp cop = null;
