@@ -14,16 +14,16 @@ public class Config {
     public static PrintStream fout;
 
     public static boolean useOutputIrrelevantElimination = true;
-    public static boolean useInlineOptimization = true;
     public static boolean useBackupOptimization = true;
     public static boolean useLocalValueNumberOptimization = true;
     public static boolean useUselessInstructionElimination = true;
-    public static int inlineMaxDepth = 5;
-    public static int inlineOperationsThreshold = 30;
+    public static boolean useInlineOptimization = true;
+    public static int inlineMaxDepth = 1;
+    public static int inlineOperationsThreshold = 25;
 
     public static Allocator allocator = Allocator.SimpleGraphAllocator;
     public static boolean printAST = false;
-    public static boolean printIR = false;
+    public static boolean printIR = true;
     public static boolean printIRAfterLocalValueNumberOptimization = false;
     public static boolean printIRAfterUselessInstructionElimination = false;
     public static boolean printIRAfterAllocator = false;

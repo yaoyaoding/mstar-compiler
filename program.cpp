@@ -1,46 +1,159 @@
-int cd(int d, string a, string b, string c, int sum) {
-    if (d == 1) {
-        //println("move " + a + " --> " + c);
-        sum++;
-    } else {
-        sum = cd(d - 1, a, c, b, sum);
-        //println("move " + a + " --> " + c);
-        sum = cd(d - 1, b, a, c, sum);
-        sum++;
-    }
-    return sum;
+bool check(int a, int N) {
+    return ((a < N) && (a >= 0));
 }
 
 int main() {
-    string a = "A";
-	string b = "B";
-	string c = "C";
-    int d = getInt();
-    int sum = cd(d, a, b, c, 0);
-    println(toString(sum));
+    int N;
+    int head;
+	int startx;
+	int starty;
+    int targetx;
+	int targety;
+	int tail;
+	int ok;
+	int now;
+    int x;
+	int y;
+    int[] xlist;
+	int[] ylist;
+    int[][] step;
+    int i;
+	int j;
+
+    N = getInt();
+    head =0;
+    tail = 0;
+    startx = 0;
+    starty = 0;
+    targetx = N-1;
+    targety = N-1;
+    x = 0;
+    y = 0;
+    now = 0;
+    ok = 0;
+    xlist = new int[N * N];
+    for (i = 0; i < N * N; i ++ )
+        xlist[i] = 0;
+    ylist = new int[N * N];
+    for (i = 0; i < N * N; i ++ )
+        ylist[i] = 0;
+    step = new int[N][];
+    for (i = 0; i < N;  i ++ ) {
+		step[i] = new int[N];
+        for (j = 0; j < N; j ++ )
+        step[i][j] = -1;
+    }
+    xlist[0] = startx;
+    ylist[0] = starty;
+    step[startx][starty] = 0;
+    while (head <= tail)
+    {
+        now = step[xlist[head]][ylist[head]];
+        x = xlist[head] - 1;
+        y = ylist[head] - 2;
+        if (check(x, N) && check(y, N) && step[x][y] == -1)
+        {
+            tail = tail + 1;
+            xlist[tail] = x;
+            ylist[tail] = y;
+            step[x][y] = now + 1;
+            if (x == targetx && y == targety) ok = 1;
+        }
+        x = xlist[head] - 1;
+        y = ylist[head] + 2;
+        if (check(x, N) && check(y, N) && step[x][y] == -1)
+        {
+            tail = tail + 1;
+            xlist[tail] = x;
+            ylist[tail] = y;
+            step[x][y] = now + 1;
+            if (x == targetx && y == targety) ok = 1;
+        }
+        x = xlist[head] + 1;
+        y = ylist[head] - 2;
+        if (check(x, N) && check(y, N) && step[x][y] == -1)
+        {
+            tail = tail + 1;
+            xlist[tail] = x;
+            ylist[tail] = y;
+            step[x][y] = now + 1;
+            if (x == targetx && y == targety) ok = 1;
+        }
+        x = xlist[head] + 1;
+        y = ylist[head] + 2;
+        if (check(x, N) && check(y, N) && step[x][y] == -1)
+        {
+            tail = tail + 1;
+            xlist[tail] = x;
+            ylist[tail] = y;
+            step[x][y] = now + 1;
+            if (x == targetx && y == targety) ok = 1;
+        }
+        x = xlist[head] - 2;
+        y = ylist[head] - 1;
+        if (check(x, N) && check(y, N) && step[x][y] == -1)
+        {
+            tail = tail + 1;
+            xlist[tail] = x;
+            ylist[tail] = y;
+            step[x][y] = now + 1;
+            if (x == targetx && y == targety) ok = 1;
+        }
+        x = xlist[head] - 2;
+        y = ylist[head] + 1;
+        if (check(x, N) && check(y, N) && step[x][y] == -1)
+        {
+            tail = tail + 1;
+            xlist[tail] = x;
+            ylist[tail] = y;
+            step[x][y] = now + 1;
+            if (x == targetx && y == targety) ok = 1;
+        }
+        x = xlist[head] + 2;
+        y = ylist[head] - 1;
+        if (check(x, N) && check(y, N) && step[x][y] == -1)
+        {
+            tail = tail + 1;
+            xlist[tail] = x;
+            ylist[tail] = y;
+            step[x][y] = now + 1;
+            if (x == targetx && y == targety) ok = 1;
+        }
+        x = xlist[head] + 2;
+        y = ylist[head] + 1;
+        if (check(x, N) && check(y, N) && step[x][y] == -1)
+        {
+            tail = tail + 1;
+            xlist[tail] = x;
+            ylist[tail] = y;
+            step[x][y] = now + 1;
+            if (x == targetx && y == targety) ok = 1;
+        }
+        if (ok == 1) break;
+        head = head + 1;
+    }
+    if (ok == 1) println(toString(step[targetx][targety]));
+    else print("no solution!\n");
     return 0;
 }
 
 
 
-
 /*!! metadata:
 === comment ===
-hanoi-5100379110-daibo.mx
-=== is_public ===
-True
+horse2-5100309153-yanghuan.mx
+=== input ===
+102
 === assert ===
 output
 === timeout ===
-1.5
-=== input ===
-27
-=== phase ===
-optim pretest
+0.3
 === output ===
-134217727
-=== exitcode ===
-
+68
+=== phase ===
+codegen pretest
+=== is_public ===
+True
 
 !!*/
 

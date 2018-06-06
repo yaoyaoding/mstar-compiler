@@ -347,14 +347,21 @@ public class IRBuilder implements IAstVisitor {
         /*process the non-global variable*/
         assert curFunction != null;
         VirtualRegister vr = new VirtualRegister(node.name);
-        if(isInParameter) {
-            if(curFunction.parameters.size() >= 6)
-                vr.spillPlace = new StackSlot(vr.hint);
-            curFunction.parameters.add(vr);
-        }
-        node.symbol.virtualRegister = vr;
-        if(node.init != null) {
-            assign(node.init, vr);
+        if(isInInline) {
+            inlineVariableRegisterStack.getLast().put(node.symbol, vr);
+            if(node.init != null) {
+                assign(node.init, vr);
+            }
+        } else {
+            if (isInParameter) {
+                if (curFunction.parameters.size() >= 6)
+                    vr.spillPlace = new StackSlot(vr.hint);
+                curFunction.parameters.add(vr);
+            }
+            node.symbol.virtualRegister = vr;
+            if (node.init != null) {
+                assign(node.init, vr);
+            }
         }
     }
 
@@ -598,19 +605,17 @@ public class IRBuilder implements IAstVisitor {
             arguments.add(exprResultMap.get(e));
         }
         if(deserveInline(node.functionSymbol.name)) {
-            Operand result = doInline(node.functionSymbol.name, arguments);
-            if(result != null)
-                exprResultMap.put(node, result);
+            doInline(node.functionSymbol.name, arguments);
         } else {
             curBB.append(new Call(curBB, vrax, functionMap.get(node.functionSymbol.name), arguments));
-            if(trueBBMap.containsKey(node)) {
-                curBB.append(new CJump(curBB, vrax, CJump.CompareOp.NE, new Immediate(0), trueBBMap.get(node), falseBBMap.get(node)));
-            } else {
-                if(!isVoidType(node.functionSymbol.returnType)) {
-                    VirtualRegister vr = new VirtualRegister("");
-                    curBB.append(new Move(curBB, vr, vrax));
-                    exprResultMap.put(node, vr);
-                }
+        }
+        if(trueBBMap.containsKey(node)) {
+            curBB.append(new CJump(curBB, vrax, CJump.CompareOp.NE, new Immediate(0), trueBBMap.get(node), falseBBMap.get(node)));
+        } else {
+            if(!isVoidType(node.functionSymbol.returnType)) {
+                VirtualRegister vr = new VirtualRegister("");
+                curBB.append(new Move(curBB, vr, vrax));
+                exprResultMap.put(node, vr);
             }
         }
     }
@@ -715,6 +720,7 @@ public class IRBuilder implements IAstVisitor {
         return count;
     }
     private int countOperations(Expression expression) {
+        if(expression == null) return 0;
         int count = 0;
         if (expression instanceof ArrayExpression) {
             count += countOperations(((ArrayExpression) expression).address);
@@ -744,25 +750,27 @@ public class IRBuilder implements IAstVisitor {
     }
 
     private int countOperations(Statement statement) {
+        if(statement == null) return 0;
         int count = 0;
         if(statement instanceof IfStatement) {
             count += countOperations(((IfStatement) statement).thenStatement);
-            if(((IfStatement) statement).elseStatement != null)
-                count += countOperations(((IfStatement) statement).elseStatement);
+            count += countOperations(((IfStatement) statement).elseStatement);
         } else if(statement instanceof WhileStatement) {
+            count += countOperations(((WhileStatement) statement).condition);
             count += countOperations(((WhileStatement) statement).body);
         } else if(statement instanceof ForStatement) {
+            count += countOperations(((ForStatement) statement).initStatement);
+            count += countOperations(((ForStatement) statement).condition);
+            count += countOperations(((ForStatement) statement).updateStatement);
             count += countOperations(((ForStatement) statement).body);
         } else if(statement instanceof BlockStatement) {
             count += countOperations(((BlockStatement) statement).statements);
         } else if(statement instanceof ReturnStatement) {
-            if(((ReturnStatement) statement).retExpression != null)
-                count += countOperations(((ReturnStatement) statement).retExpression);
+            count += countOperations(((ReturnStatement) statement).retExpression);
         } else if(statement instanceof ExprStatement) {
             count += countOperations(((ExprStatement) statement).expression);
         } else if(statement instanceof VarDeclStatement) {
-            if(((VarDeclStatement) statement).declaration.init != null)
-                count += countOperations(((VarDeclStatement) statement).declaration.init);
+            count += countOperations(((VarDeclStatement) statement).declaration.init);
         } else {
             count += 1;
         }
@@ -792,7 +800,7 @@ public class IRBuilder implements IAstVisitor {
             return false;
         return true;
     }
-    private Operand doInline(String name, LinkedList<Operand> arguments) {
+    private void doInline(String name, LinkedList<Operand> arguments) {
         FuncDeclaration funcDeclaration = funcDeclarationMap.get(name);
         inlineVariableRegisterStack.addLast(new HashMap<>());
         LinkedList<VirtualRegister> vrArguments = new LinkedList<>();
@@ -817,21 +825,14 @@ public class IRBuilder implements IAstVisitor {
         for(Statement st : funcDeclaration.body)
             st.accept(this);
 
-        if(isVoidType(funcDeclaration.symbol.returnType)) {
-            if(!(curBB.tail instanceof Jump))
-                curBB.append(new Jump(curBB, inlineFuncAfterBB));
-        } else {
-            assert curBB.tail instanceof Jump;
-            result = new VirtualRegister("");
-            inlineFuncAfterBB.append(new Move(inlineFuncAfterBB, result, vrax));
-        }
+        if(!(curBB.tail instanceof Jump))
+            curBB.append(new Jump(curBB, inlineFuncAfterBB));
 
         curBB = inlineFuncAfterBB;
 
         inlineFuncAfterBBStack.removeLast();
         inlineVariableRegisterStack.removeLast();
         isInInline = oldIsInline;
-        return result;
     }
 
     @Override
@@ -859,16 +860,16 @@ public class IRBuilder implements IAstVisitor {
                     arguments.add(arg);
                 }
                 if(deserveInline(node.methodCall.functionSymbol.name)) {
-                    operand = doInline(node.methodCall.functionSymbol.name, arguments);
+                    doInline(node.methodCall.functionSymbol.name, arguments);
                 } else {
                     curBB.append(new Call(curBB, vrax, function, arguments));
-                    if (!isVoidType(node.methodCall.functionSymbol.returnType)) {
-                        VirtualRegister retValue = new VirtualRegister("");
-                        curBB.append(new Move(curBB, retValue, vrax));
-                        operand = retValue;
-                    } else {
-                        operand = null;
-                    }
+                }
+                if (!isVoidType(node.methodCall.functionSymbol.returnType)) {
+                    VirtualRegister retValue = new VirtualRegister("");
+                    curBB.append(new Move(curBB, retValue, vrax));
+                    operand = retValue;
+                } else {
+                    operand = null;
                 }
             }
             if(trueBBMap.containsKey(node)) {
