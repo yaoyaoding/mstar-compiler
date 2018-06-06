@@ -91,7 +91,8 @@ public class OutputIrrelevantEliminator implements IAstVisitor {
         for(Statement s : needToRemove) {
             AstPrinter astPrinter = new AstPrinter();
             s.accept(astPrinter);
-            astPrinter.printTo(System.err);
+            if(Config.printIR)
+                astPrinter.printTo(System.err);
         }
     }
 
@@ -189,7 +190,8 @@ public class OutputIrrelevantEliminator implements IAstVisitor {
             if(canRemove(node.body)) {
                 AstPrinter astPrinter = new AstPrinter();
                 node.body.accept(astPrinter);
-                astPrinter.printTo(System.err);
+                if(Config.printIR)
+                    astPrinter.printTo(System.err);
                 node.body = new EmptyStatement();
             } else {
                 node.body.accept(this);

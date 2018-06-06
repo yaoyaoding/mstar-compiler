@@ -1,7 +1,6 @@
 package Mstar;
 
 import Mstar.AST.AstProgram;
-import Mstar.Config;
 import Mstar.IR.IRProgram;
 import Mstar.IR.RegisterSet;
 import Mstar.Parser.MstarLexer;
@@ -17,7 +16,6 @@ import java.io.*;
 
 
 import static java.lang.System.exit;
-import static java.lang.System.in;
 
 
 public class MstarCompiler {
@@ -59,7 +57,7 @@ public class MstarCompiler {
                         Config.useLocalValueNumberOptimization = false;
                         Config.useOutputIrrelevantElimination = false;
                         Config.useBackupOptimization = false;
-                        Config.useSimpleInline = false;
+                        Config.useInlineOptimization = false;
                         break;
                     case "--printAST":
                         Config.printAST = true;

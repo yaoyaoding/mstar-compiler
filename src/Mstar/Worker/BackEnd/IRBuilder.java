@@ -35,6 +35,8 @@ public class IRBuilder implements IAstVisitor {
     private boolean isInClassDeclaration;
     private boolean isInInline;
     private LinkedList<HashMap<VariableSymbol,VirtualRegister>> inlineVariableRegisterStack;
+    private LinkedList<BasicBlock> inlineFuncAfterBBStack;
+    private HashMap<FunctionSymbol,Integer> operationsCountMap;
 
 
     private static Function library_print;
@@ -69,6 +71,8 @@ public class IRBuilder implements IAstVisitor {
         this.isInParameter = false;
         this.isInClassDeclaration = false;
         this.inlineVariableRegisterStack = new LinkedList<>();
+        this.inlineFuncAfterBBStack = new LinkedList<>();
+        this.operationsCountMap = new HashMap<>();
         initLibraryFunctions();
     }
 
@@ -465,12 +469,13 @@ public class IRBuilder implements IAstVisitor {
         if(node.retExpression != null) {
             if(isBoolType(node.retExpression.type)) {
                 boolAssign(node.retExpression, vrax);
-                curBB.append(new Return(curBB));
             } else {
                 node.retExpression.accept(this);
                 curBB.append(new Move(curBB, vrax, exprResultMap.get(node.retExpression)));
-                curBB.append(new Return(curBB));
             }
+        }
+        if(isInInline) {
+            curBB.append(new Jump(curBB, inlineFuncAfterBBStack.getLast()));
         } else {
             curBB.append(new Return(curBB));
         }
@@ -703,11 +708,75 @@ public class IRBuilder implements IAstVisitor {
         }
     }
 
-    private boolean deserveInline(String name) {
-        if(name.equals("xorshift")) {
-            name = name;
+    private int countOperationsLE(List<Expression> expressions) {
+        int count = 0;
+        for(Expression expression : expressions)
+            count += countOperations(expression);
+        return count;
+    }
+    private int countOperations(Expression expression) {
+        int count = 0;
+        if (expression instanceof ArrayExpression) {
+            count += countOperations(((ArrayExpression) expression).address);
+            count += countOperations(((ArrayExpression) expression).index);
+        } else if (expression instanceof FuncCallExpression) {
+            count += countOperationsLE(((FuncCallExpression) expression).arguments);
+        } else if (expression instanceof NewExpression) {
+            count += countOperationsLE(((NewExpression) expression).exprDimensions);
+        } else if (expression instanceof UnaryExpression) {
+            count += countOperations(((UnaryExpression) expression).expression);
+            count += 1;
+        } else if (expression instanceof MemberExpression) {
+            if(((MemberExpression) expression).fieldAccess != null)
+                count += 1;
+            else
+                count += countOperations(((MemberExpression) expression).methodCall);
+        } else if (expression instanceof BinaryExpression) {
+            count += countOperations(((BinaryExpression) expression).lhs);
+            count += countOperations(((BinaryExpression) expression).rhs);
+        } else if (expression instanceof AssignExpression) {
+            count += countOperations(((AssignExpression) expression).lhs);
+            count += countOperations(((AssignExpression) expression).rhs);
+        } else {
+            count += 1;
         }
-        if(!Config.useSimpleInline) return false;
+        return count;
+    }
+
+    private int countOperations(Statement statement) {
+        int count = 0;
+        if(statement instanceof IfStatement) {
+            count += countOperations(((IfStatement) statement).thenStatement);
+            if(((IfStatement) statement).elseStatement != null)
+                count += countOperations(((IfStatement) statement).elseStatement);
+        } else if(statement instanceof WhileStatement) {
+            count += countOperations(((WhileStatement) statement).body);
+        } else if(statement instanceof ForStatement) {
+            count += countOperations(((ForStatement) statement).body);
+        } else if(statement instanceof BlockStatement) {
+            count += countOperations(((BlockStatement) statement).statements);
+        } else if(statement instanceof ReturnStatement) {
+            if(((ReturnStatement) statement).retExpression != null)
+                count += countOperations(((ReturnStatement) statement).retExpression);
+        } else if(statement instanceof ExprStatement) {
+            count += countOperations(((ExprStatement) statement).expression);
+        } else if(statement instanceof VarDeclStatement) {
+            if(((VarDeclStatement) statement).declaration.init != null)
+                count += countOperations(((VarDeclStatement) statement).declaration.init);
+        } else {
+            count += 1;
+        }
+        return count;
+    }
+    private int countOperations(List<Statement> statements) {
+        int count = 0;
+        for(Statement s : statements)
+            count += countOperations(s);
+        return count;
+    }
+
+    private boolean deserveInline(String name) {
+        if(!Config.useInlineOptimization) return false;
         if(!funcDeclarationMap.containsKey(name))   //  library function
             return false;
         FuncDeclaration funcDeclaration = funcDeclarationMap.get(name);
@@ -716,36 +785,52 @@ public class IRBuilder implements IAstVisitor {
         if(!funcDeclaration.symbol.isGlobalFunction)    //  is a method
             return false;
         List<Statement> body = funcDeclaration.body;
-        if(body.size() != 1) return false;
-        if(!(body.get(0) instanceof ReturnStatement)) return false;
-        ReturnStatement returnStatement = (ReturnStatement) body.get(0);
-        Expression expression = returnStatement.retExpression;
-        return !isBoolType(expression.type) && !isVoidType(expression.type);
+        if(!operationsCountMap.containsKey(funcDeclaration.symbol))
+            operationsCountMap.put(funcDeclaration.symbol, countOperations(body));
+        if(operationsCountMap.get(funcDeclaration.symbol) >= Config.inlineOperationsThreshold) return false;
+        if(inlineVariableRegisterStack.size() >= Config.inlineMaxDepth)
+            return false;
+        return true;
     }
     private Operand doInline(String name, LinkedList<Operand> arguments) {
         FuncDeclaration funcDeclaration = funcDeclarationMap.get(name);
-        boolean oldIsInline = isInInline;
-        isInInline = true;
         inlineVariableRegisterStack.addLast(new HashMap<>());
-        FunctionSymbol functionSymbol = funcDeclaration.symbol;
         LinkedList<VirtualRegister> vrArguments = new LinkedList<>();
         for(Operand op : arguments) {
-            if(op instanceof VirtualRegister) {
-                vrArguments.add((VirtualRegister) op);
-            } else {
-                VirtualRegister vr = new VirtualRegister("");
-                curBB.append(new Move(curBB, vr, op));
-                vrArguments.add(vr);
-            }
+            VirtualRegister vr = new VirtualRegister("");
+            curBB.append(new Move(curBB, vr, op));
+            vrArguments.add(vr);
         }
         for(int i = 0; i < funcDeclaration.parameters.size(); i++)
             inlineVariableRegisterStack.getLast().put(funcDeclaration.parameters.get(i).symbol, vrArguments.get(i));
-        ReturnStatement returnStatement = (ReturnStatement)funcDeclaration.body.get(0);
-        returnStatement.retExpression.accept(this);
-        Operand result = exprResultMap.get(returnStatement.retExpression);
+        BasicBlock inlineFuncBodyBB = new BasicBlock(curFunction, "inlineFuncBodyBB");
+        BasicBlock inlineFuncAfterBB = new BasicBlock(curFunction, "inlineFuncAfterBB");
+        inlineFuncAfterBBStack.addLast(inlineFuncAfterBB);
+
+        curBB.append(new Jump(curBB, inlineFuncBodyBB));
+        curBB = inlineFuncBodyBB;
+        VirtualRegister result = null;
+
+        boolean oldIsInline = isInInline;
+        isInInline = true;
+
+        for(Statement st : funcDeclaration.body)
+            st.accept(this);
+
+        if(isVoidType(funcDeclaration.symbol.returnType)) {
+            if(!(curBB.tail instanceof Jump))
+                curBB.append(new Jump(curBB, inlineFuncAfterBB));
+        } else {
+            assert curBB.tail instanceof Jump;
+            result = new VirtualRegister("");
+            inlineFuncAfterBB.append(new Move(inlineFuncAfterBB, result, vrax));
+        }
+
+        curBB = inlineFuncAfterBB;
+
+        inlineFuncAfterBBStack.removeLast();
         inlineVariableRegisterStack.removeLast();
         isInInline = oldIsInline;
-
         return result;
     }
 
