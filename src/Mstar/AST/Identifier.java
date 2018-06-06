@@ -9,8 +9,10 @@ public class Identifier extends Expression {
     public VariableSymbol symbol;
 
     public Identifier(Token token) {
-        this.name = token.getText();
-        this.location = new TokenLocation(token);
+        if(token != null) {
+            this.name = token.getText();
+            this.location = new TokenLocation(token);
+        }
     }
 
     @Override

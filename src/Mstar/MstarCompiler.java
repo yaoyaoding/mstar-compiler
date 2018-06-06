@@ -173,6 +173,11 @@ public class MstarCompiler {
             outputIrrevelantEliminator.run();
         }
 
+        if(Config.useCommomAssignElimination) {
+            CommonAssignEliminator commonAssignEliminator = new CommonAssignEliminator(astProgram);
+            commonAssignEliminator.run();
+        }
+
         //  AST with Symbol information -> IR with VirtualRegister
         IRBuilder irBuilder = new IRBuilder(globalSymbolTable);
         astProgram.accept(irBuilder);

@@ -13,6 +13,7 @@ public class Config {
     public static FileInputStream fin;
     public static PrintStream fout;
 
+    public static boolean useCommomAssignElimination = true;
     public static boolean useOutputIrrelevantElimination = true;
     public static boolean useBackupOptimization = true;
     public static boolean useLocalValueNumberOptimization = true;

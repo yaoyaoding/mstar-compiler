@@ -27,9 +27,13 @@ public class IRBuilder implements IAstVisitor {
 
     private HashMap<String,Function> functionMap;
     private HashMap<String,FuncDeclaration> funcDeclarationMap;
+
+    //  for short-cut boolean calculate
     private HashMap<Expression,BasicBlock> trueBBMap, falseBBMap;
     private HashMap<Expression,Operand> exprResultMap;
     private HashMap<Expression,Address> assignToMap;
+
+    //  for inline optimization
     private boolean isInParameter;
     private boolean isInClassDeclaration;
     private boolean isInInline;
@@ -54,6 +58,7 @@ public class IRBuilder implements IAstVisitor {
     private static Function library_stringCompare;
     private static Function external_malloc;
     private static Function library_init;
+
 
     public IRBuilder(GlobalSymbolTable gst) {
         this.gst = gst;
@@ -1094,11 +1099,7 @@ public class IRBuilder implements IAstVisitor {
     public void visit(AssignExpression node) {
         node.lhs.accept(this);
         Operand lvalue = exprResultMap.get(node.lhs);
-        try {
-            assert lvalue instanceof Address;
-        } catch (Error e) {
-            e.getStackTrace();
-        }
+        assert lvalue instanceof Address;
         assign(node.rhs, (Address)lvalue);
     }
 
