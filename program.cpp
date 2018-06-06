@@ -1,22 +1,16 @@
-int cd(int d, string a, string b, string c, int sum) {
-    if (d == 1) {
-        sum++;
+int tak(int x, int y, int z) {
+    if(y < x) {
+        return 1 + tak( tak(x - 1, y , z),
+            tak(y - 1, z , x),
+            tak(z - 1, x , y)
+        );
     } else {
-        sum = cd(d - 1, a, c, b, sum);
-        sum = cd(d - 1, b, a, c, sum);
-        sum++;
+       return z;
     }
-    return sum;
 }
 
 int main() {
-    string a = "A";
-	string b = "B";
-	string c = "C";
-    int d = getInt();
-    int sum = cd(d, a, b, c, 0);
-    println(toString(sum));
-    return 0;
+    return tak(18,12,6);
 }
 
 
@@ -24,21 +18,19 @@ int main() {
 
 /*!! metadata:
 === comment ===
-hanoi-5100379110-daibo.mx
+function2.mx
+=== assert ===
+exitcode
+=== timeout ===
+0.1
+=== input ===
+
+=== phase ===
+codegen pretest
 === is_public ===
 True
-=== assert ===
-output
-=== timeout ===
-1.5
-=== input ===
-27
-=== phase ===
-optim pretest
-=== output ===
-134217727
 === exitcode ===
-
+13
 
 !!*/
 
