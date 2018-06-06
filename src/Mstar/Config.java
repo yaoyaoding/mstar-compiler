@@ -19,8 +19,8 @@ public class Config {
     public static boolean useLocalValueNumberOptimization = true;
     public static boolean useUselessInstructionElimination = true;
     public static boolean useInlineOptimization = true;
-    public static int inlineMaxDepth = 4;
-    public static int inlineOperationsThreshold = 25;
+    public static int inlineMaxDepth = 6;
+    public static int inlineOperationsThreshold = 20;
 
     public static Allocator allocator = Allocator.SimpleGraphAllocator;
     public static boolean printAST = false;
